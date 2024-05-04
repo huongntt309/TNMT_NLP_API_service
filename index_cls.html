@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Classify bodyText</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f3f3f3;
+            /* Added background color to the body */
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px;
+        }
+
+        .half-container {
+            width: 45%;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            /* Added background color to the half-container */
+        }
+
+        #bodyTextInput {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #predictButton {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #predictButton:hover {
+            background-color: #45a049;
+        }
+
+        #clearButton {
+            background-color: #afabab;
+            color: black;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #clearButton:hover {
+            opacity: 0.4;
+        }
+
+        #resultContainer {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        #resultContainer h2 {
+            margin-bottom: 10px;
+        }
+
+        #resultContainer p {
+            margin-bottom: 5px;
+        }
+
+        .resultLine {
+            color: #050ab0;
+            margin-top: 5px;
+        }
+
+        /* Style the navigation bar */
+        .navbar {
+            overflow: hidden;
+            background-color: #333;
+        }
+
+        /* Style the links inside the navigation bar */
+        .navbar a {
+            float: left;
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+        }
+
+        /* Change the color of links on hover */
+        .navbar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+    </style>
+
+</head>
+
+<body>
+    <!-- Navigation bar -->
+    <div class="navbar">
+        <a href="/">Phân loại</a>
+        <a href="/summarization">Tóm tắt</a>
+        <!-- Add more links as needed -->
+    </div>
+    <h1 style="text-align: center">Phân loại văn bản Tài nguyên Môi trường</h1>
+    <div class="container">
+
+        <div class="half-container" id="inputContainer">
+            <label for="titleInput">Nhập tiêu đề:</label><br>
+            <input type="text" style="width: 100%" id="titleInput" name="titleInput"><br><br>
+
+            <label for="bodyTextInput">Nhập văn bản:</label><br>
+            <textarea id="bodyTextInput" rows="10" cols="50"></textarea><br><br>
+
+            <button id="predictButton">Phân loại</button>
+            <button id="clearButton">Xóa</button>
+        </div>
+        <div class="half-container" id="resultContainer">
+            <h2>Phân loại </h2>
+            <br />
+            <p>Phân loại văn bản Tài nguyên Môi trường:</p>
+            <h3 class="resultLine" id="predictionPhanLoai"></h3>
+            <p>Mức độ:</p>
+            <h3 class="resultLine" id="predictionMucDo"></h3>
+            <p>Chuyên môn:</p>
+            <h3 class="resultLine" id="predictionChuyenMon"></h3>
+            <p>Lĩnh Vực:</p>
+            <h3 class="resultLine" id="predictionLinhVuc"></h3>
+            <p>Khu Vực:</p>
+            <h3 class="resultLine" id="predictionKhuVuc"></h3>
+
+            <div id="loadingIndicator" style="display: none;">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        const predictButton = document.getElementById("predictButton");
+
+        const bodyTextInput = document.getElementById("bodyTextInput");
+        const titleInput = document.getElementById("titleInput");
+
+        const predictionMucDo = document.getElementById("predictionMucDo");
+        const predictionPhanLoai = document.getElementById("predictionPhanLoai");
+        const predictionChuyenMon = document.getElementById("predictionChuyenMon");
+        const predictionLinhVuc = document.getElementById("predictionLinhVuc");
+        const predictionKhuVuc = document.getElementById("predictionKhuVuc");
+        const summarization = document.getElementById("summarization");
+        const clearButton = document.getElementById("clearButton");
+
+        predictButton.addEventListener("click", async () => {
+            // loading 
+            clearOutput();
+            const loadingIndicator = document.getElementById("loadingIndicator");
+
+            const bodyText = bodyTextInput.value.trim();
+            const title = titleInput.value.trim();
+            if (!bodyText) {
+                alert("Please enter some text.");
+                return;
+            }
+            if (!title) {
+                alert("Please enter some text.");
+                return;
+            }
+            loadingIndicator.style.display = "block";
+
+            const data = [
+                {
+                    "id": "abc123",
+                    "title": title,
+                    "summary": "",
+                    "content": bodyText,
+                }
+            ];
+            const response = await fetch("/predict", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+
+            loadingIndicator.style.display = "none";
+
+            predictionPhanLoai.textContent = result.phan_loai;
+            predictionMucDo.textContent = result.muc_do;
+            predictionChuyenMon.textContent = result.chuyen_mon;
+            predictionLinhVuc.textContent = result.linh_vuc;
+            predictionKhuVuc.textContent = result.khu_vuc;
+        });
+
+        clearButton.addEventListener("click", () => {
+            bodyTextInput.value = ""; // Clear input
+            clearOutput();
+        });
+
+        function clearOutput() {
+            predictionMucDo.textContent = "";
+            predictionPhanLoai.textContent = "";
+
+            predictionChuyenMon.textContent = "";
+            predictionLinhVuc.textContent = "";
+        }
+    </script>
+</body>
+
+</html>

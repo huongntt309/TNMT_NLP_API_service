@@ -1,0 +1,4 @@
+conda create --name <new_env_name> python=3.11
+conda activate <new_env_name>
+
+pip install transformers[torch] flask waitress underthesea sentencepiece
