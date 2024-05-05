@@ -26,11 +26,11 @@ def setup():
 
     script_dir = os.path.dirname(os.path.realpath(__file__))
     model_cls_path = os.path.join(script_dir, "classification/vit5-cp-6790")
-    model_cls_path2 = os.path.join(script_dir, "classification/vit5-cp-3280")
+    # model_cls_path2 = os.path.join(script_dir, "classification/vit5-cp-3280")
     model_summarization_path = os.path.join(script_dir, "summarization/bartpho-cp11000")
 
     model_classification = AutoModelForSeq2SeqLM.from_pretrained(model_cls_path)
-    model_classification2 = AutoModelForSeq2SeqLM.from_pretrained(model_cls_path2)
+    # model_classification2 = AutoModelForSeq2SeqLM.from_pretrained(model_cls_path2)
     model_summarization = AutoModelForSeq2SeqLM.from_pretrained(model_summarization_path)
 
     # Load tokenizer
@@ -99,6 +99,13 @@ class Summarization:
 
 
 def predict_cls(text):
+    def preprocess_text(text):
+        # remove redundant spaces
+        text = re.sub(r'\s+', ' ', text)
+        text = text.strip()
+        return text
+
+    text = preprocess_text(text)
     # Perform detection
     max_target_length = 256
     inputs = tokenizer_classification(text, return_tensors="pt")
@@ -137,15 +144,16 @@ def classify_article(data):
     is_in_vietnam, province_list = check_in_VietNam(text)
     
     prd_data = predict_cls(text)
-    prd_data2 = predict_cls2(text)
+    # prd_data2 = predict_cls2(text)
     prd_aspect_law = check_aspect_sua_doi_luat(text)
+    print("prd_aspect_law:", prd_aspect_law)
     prd_topic, prd_sentiment, prd_sub_topic, prd_aspect = prd_data.split(';')
-    prd_sentiment, prd_sub_topic, prd_aspect = prd_data2.split(';')
+    # prd_sentiment, prd_sub_topic, prd_aspect = prd_data2.split(';')
         
     print("prd_data:", prd_data)
-    print("prd_data2:", prd_data2)
+    # print("prd_data2:", prd_data2)
     
-    if prd_aspect_law != False:
+    if prd_aspect_law != None:
         prd_aspect = prd_aspect + '. ' + prd_aspect_law
         
     if is_in_vietnam:        
@@ -195,22 +203,24 @@ def check_in_VietNam(text):
 
 
 def check_aspect_sua_doi_luat(text):
-    sua_doi_luat_verb = ["sửa đổi", "cập nhật", "thay thế", "bổ sung", "cải tiến", "điều chỉnh", "thay đổi", "chỉnh sửa", "cải cách", "đổi mới"]
-    sua_doi_luat_noun = ["nghị định", "luật", "quy định"]
-
-    cartesian_product = list(itertools.product(sua_doi_luat_verb, sua_doi_luat_noun))
-
-    final_rules = []
-    for item in cartesian_product:
-        final_rules.append(" ".join(item))
-
-    text = text.lower()
-    for rule in final_rules:
-        if rule in text:
-            return rule
-
-    for rule in final_rules:
-        if rule in text:
-            return rule
+    # sua_doi_luat_verb = ["sửa đổi", "cập nhật", "thay thế", "bổ sung", "cải tiến", "điều chỉnh", "thay đổi", "chỉnh sửa", "cải cách", "đổi mới"]
+    # sua_doi_luat_noun = ["nghị định", "luật", "quy định"]
     
-    return False
+    law_file = "law.txt"
+
+    with open(law_file, 'r', encoding='utf-8') as file:
+        law_names = [line.strip() for line in file.readlines()]
+        
+    text = text.lower()
+    frequency = {}
+
+    for name in law_names:
+        count = text.count(name.lower())
+        frequency[name] = count
+
+    max_frequency_name = max(frequency, key=frequency.get)
+    if frequency[max_frequency_name] >= 3:
+        return max_frequency_name
+    else:
+        return None
+    
