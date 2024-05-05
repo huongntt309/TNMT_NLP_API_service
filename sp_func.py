@@ -25,12 +25,10 @@ def setup():
     global model_summarization
 
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    model_cls_path = os.path.join(script_dir, "classification/vit5-cp-6790")
-    # model_cls_path2 = os.path.join(script_dir, "classification/vit5-cp-3280")
+    model_cls_path = os.path.join(script_dir, "classification/vit5-cp-6660")
     model_summarization_path = os.path.join(script_dir, "summarization/bartpho-cp11000")
 
     model_classification = AutoModelForSeq2SeqLM.from_pretrained(model_cls_path)
-    # model_classification2 = AutoModelForSeq2SeqLM.from_pretrained(model_cls_path2)
     model_summarization = AutoModelForSeq2SeqLM.from_pretrained(model_summarization_path)
 
     # Load tokenizer
@@ -53,9 +51,8 @@ def setup():
 
 
 class Summarization:
-    dict_map = {
-        "òa": "oà", "Òa": "Oà", "ÒA": "OÀ", "óa": "oá", "Óa": "Oá", "ÓA": "OÁ", "ỏa": "oả", "Ỏa": "Oả", "ỎA": "OẢ", "õa": "oã", "Õa": "Oã", "ÕA": "OÃ", "ọa": "oạ", "Ọa": "Oạ", "ỌA": "OẠ", "òe": "oè", "Òe": "Oè", "ÒE": "OÈ", "óe": "oé", "Óe": "Oé", "ÓE": "OÉ", "ỏe": "oẻ", "Ỏe": "Oẻ", "ỎE": "OẺ", "õe": "oẽ", "Õe": "Oẽ", "ÕE": "OẼ", "ọe": "oẹ", "Ọe": "Oẹ", "ỌE": "OẸ", "ùy": "uỳ", "Ùy": "Uỳ", "ÙY": "UỲ", "úy": "uý", "Úy": "Uý", "ÚY": "UÝ", "ủy": "uỷ", "Ủy": "Uỷ", "ỦY": "UỶ", "ũy": "uỹ", "Ũy": "Uỹ", "ŨY": "UỸ", "ụy": "uỵ", "Ụy": "Uỵ", "ỤY": "UỴ", "…": "."
-    }
+    with open('dict_map.json', 'r', encoding='utf-8') as f:
+        dict_map = json.load(f)
 
     @staticmethod
     def replace_all(text):
@@ -64,163 +61,177 @@ class Summarization:
         return text
 
     @staticmethod
-    def generateSummary(sentnum, title, text):
-        text = str(sentnum) + ' câu. Tên: <' + title + '>. Nội dung: <' + text + '>'
+    def generateSummary(sentnum, texts):
         model_summarization.eval()
         with torch.no_grad():
-            inputs = tokenizer_summarization(text, max_length=1024, truncation=True, return_tensors='pt')
+            inputs = tokenizer_summarization(texts, padding=True, max_length=1024, truncation=True, return_tensors='pt')
             outputs = model_summarization.generate(**inputs, max_length=512, num_beams=5,
-                                                   early_stopping=True, no_repeat_ngram_size=3)
-            prediction = tokenizer_summarization.decode(outputs[0], skip_special_tokens=True)
+                                    early_stopping=True, no_repeat_ngram_size=3)
+            prediction = tokenizer_summarization.batch_decode(outputs, skip_special_tokens=True)
         return prediction
 
     @staticmethod
-    def getDocSummary(sentnum, title, text, lim=850):
-        text, title = Summarization.replace_all(text), Summarization.replace_all(title)
-        title_len = len(title.split(' '))
-        sentid, prediction = 0, ''
-        sents = sent_tokenize(text)
+    def divideText(title_len, prediction, sents, lim=850):
         sentlen = [len(s.split(' ')) for s in sents]
-
-        while sentid < len(sents):
-            curlen, curtext = title_len + len(prediction.split(' ')), ''
-            while sentid < len(sents) and curlen + sentlen[sentid] <= lim:
-                curtext += sents[sentid] + ' '
-                curlen += sentlen[sentid]
-                sentid += 1
-
-            if sentid < len(sents) and curtext == '':
-                curtext += sents[sentid] + ' '
-                curlen += sentlen[sentid]
-                sentid += 1
-            prediction = Summarization.generateSummary(sentnum, title, prediction + ' ' + curtext)
-        return prediction
-
-
-
-def predict_cls(text):
-    def preprocess_text(text):
-        # remove redundant spaces
-        text = re.sub(r'\s+', ' ', text)
-        text = text.strip()
-        return text
-
-    text = preprocess_text(text)
-    # Perform detection
-    max_target_length = 256
-    inputs = tokenizer_classification(text, return_tensors="pt")
-    input_ids = inputs.input_ids
-    attention_mask = inputs.attention_mask
- 
-    # model predict
-    output_cls = model_classification.generate(
-        input_ids=input_ids,
-        max_length=max_target_length,
-        attention_mask=attention_mask,
-    )
-
-    predicted_cls = tokenizer_classification.decode(output_cls[0], skip_special_tokens=True)
-    return predicted_cls
-
-def predict_cls2(text):
-    # Perform detection
-    max_target_length = 256
-    inputs = tokenizer_classification(text, return_tensors="pt")
-    input_ids = inputs.input_ids
-    attention_mask = inputs.attention_mask
- 
-    # model predict
-    output_cls = model_classification2.generate(
-        input_ids=input_ids,
-        max_length=max_target_length,
-        attention_mask=attention_mask,
-    )
-
-    predicted_cls = tokenizer_classification.decode(output_cls[0], skip_special_tokens=True)
-    return predicted_cls
-
-def classify_article(data):
-    text = data['title'] + '. ' + data['summary'] + '. ' + data['content']
-    is_in_vietnam, province_list = check_in_VietNam(text)
-    
-    prd_data = predict_cls(text)
-    # prd_data2 = predict_cls2(text)
-    prd_aspect_law = check_aspect_sua_doi_luat(text)
-    print("prd_aspect_law:", prd_aspect_law)
-    prd_topic, prd_sentiment, prd_sub_topic, prd_aspect = prd_data.split(';')
-    # prd_sentiment, prd_sub_topic, prd_aspect = prd_data2.split(';')
+        sentid = 0
+        curlen, curtext = title_len + len(prediction.split(' ')), ''
         
-    print("prd_data:", prd_data)
-    # print("prd_data2:", prd_data2)
-    
-    if prd_aspect_law != None:
-        prd_aspect = prd_aspect + '. ' + prd_aspect_law
+        while sentid < len(sents) and curlen + sentlen[sentid] <= lim:
+            curtext += sents[sentid] + ' '
+            curlen += sentlen[sentid]
+            sentid += 1
+
+        if sentid < len(sents) and curtext == '':
+            curtext += sents[sentid] + ' '
+            curlen += sentlen[sentid]
+            sentid += 1
+        return curtext, sents[sentid:]
+
+    @staticmethod
+    def getDocSummary(docs, sentnum):
+        '''
+        INPUT:
+            docs: json data
+            [
+                {
+                    id:
+                    title:
+                    anchor:
+                    content:
+                },
+                {}
+            ]
+        OUTPUT:
+            res:
+            [
+                {
+                    id:
+                    summary:
+                },
+                {}
+            ] 
+        '''
+        sents, titles, title_lens, res = {},{},{},[]
+        batch_size = 8
         
-    if is_in_vietnam:        
+        for d in docs:
+            sents[d['id']] = sent_tokenize(Summarization.replace_all(d['anchor'] + '.\n' + d['content']))
+            titles[d['id']] = Summarization.replace_all(d['title'])
+            title_lens[d['id']] = len(titles[d['id']].split(' '))
+        
+        for i in range(0, len(docs), batch_size):
+            batchIDs = list(titles.keys())[i:i+batch_size]
+            prediction_b = {i:'' for i in batchIDs}
+            while len(batchIDs):
+                text_b = []
+                for ID in batchIDs:
+                    text, sents[ID] = Summarization.divideText(title_lens[ID], prediction_b[ID], sents[ID])
+                    text_b.append(str(sentnum) + ' câu. Tên: <' + titles[ID] + '>. Nội dung: <' + prediction_b[ID] + ' ' + text + '>')
+
+                summs = Summarization.generateSummary(sentnum, text_b)
+                removeIDs = []
+                for i, ID in enumerate(batchIDs):
+                    prediction_b[ID] = summs[i]
+                    if sents[ID] == []:
+                        res.append({'id': ID, 'summary': summs[i]})
+                        removeIDs.append(ID)
+                
+                batchIDs = [i for i in batchIDs if i not in removeIDs]
+        return res
+
+
+class Classification:
+    
+    @staticmethod
+    def predict_cls(text):
+        def preprocess_text(text):
+            # remove redundant spaces
+            text = re.sub(r'\s+', ' ', text)
+            text = text.strip()
+            return text
+
+        text = preprocess_text(text)
+        # Perform detection
+        max_target_length = 256
+        inputs = tokenizer_classification(text, return_tensors="pt")
+        input_ids = inputs.input_ids
+        attention_mask = inputs.attention_mask
+    
+        # model predict
+        output_cls = model_classification.generate(
+            input_ids=input_ids,
+            max_length=max_target_length,
+            attention_mask=attention_mask,
+        )
+
+        predicted_cls = tokenizer_classification.decode(output_cls[0], skip_special_tokens=True)
+        return predicted_cls
+
+    @staticmethod
+    def classify_article(data):
+        text = data['title'] + '. ' + data['anchor'] + '. ' + data['content']
+        is_in_vietnam, province_list = Classification.check_in_VietNam(text)
+        
+        prd_data = Classification.predict_cls(text)
+        prd_aspect_law = Classification.check_aspect_sua_doi_luat(text)
+        prd_topic, prd_sentiment, prd_sub_topic, prd_aspect = prd_data.split(';')
+            
+        print("prd_data:", data['id'],  prd_data)
+        # print("prd_data2:", prd_data2)
+        
+        if prd_aspect_law != None:
+            prd_aspect = prd_aspect + '. ' + prd_aspect_law
+            
         result = {
             "id"        : data['id'],                          
-            "summary"   : data["summary"],          
             "topic"     : prd_topic,                           
             "sub_topic" : prd_sub_topic,                
             "aspect"    : prd_aspect,            
             "sentiment" : prd_sentiment,                      
             "province"  : province_list,
         }
-    else:
-        result = {
-            "id"        : data['id'],                          
-            "summary"   : data["summary"],     
-            "topic"     : prd_topic,                           
-            "sub_topic" : prd_sub_topic,                
-            "aspect"    : prd_aspect,            
-            "sentiment" : prd_sentiment,                     
-            "province"  : "Không",
-        }
-    return result
+        return result
 
+    @staticmethod
+    def check_in_VietNam(text):
+        province_viet_nam_file = "province_viet_nam.txt"
 
-def check_in_VietNam(text):
-    province_viet_nam_file = "province_viet_nam.txt"
-
-    with open(province_viet_nam_file, 'r', encoding='utf-8') as file:
-        provinces = [line.replace("\n", "") for line in file.readlines()]
-        
-    is_in_vietnam = False
-    province_list = set()
-    for province in provinces:
-        if province in text:
-            is_in_vietnam = True
-            province_list.add(province)
-    province_list = list(province_list)
-    
-    keywords_TNMT = ['Bộ Tài nguyên và Môi trường', 'Bộ TN&MT'] 
-    for kw in keywords_TNMT:
-        if kw in text:
-            is_in_vietnam = True
+        with open(province_viet_nam_file, 'r', encoding='utf-8') as file:
+            provinces = [line.replace("\n", "") for line in file.readlines()]
             
-    return is_in_vietnam, province_list
-
-
-
-def check_aspect_sua_doi_luat(text):
-    # sua_doi_luat_verb = ["sửa đổi", "cập nhật", "thay thế", "bổ sung", "cải tiến", "điều chỉnh", "thay đổi", "chỉnh sửa", "cải cách", "đổi mới"]
-    # sua_doi_luat_noun = ["nghị định", "luật", "quy định"]
-    
-    law_file = "law.txt"
-
-    with open(law_file, 'r', encoding='utf-8') as file:
-        law_names = [line.strip() for line in file.readlines()]
+        is_in_vietnam = False
+        province_list = set()
+        for province in provinces:
+            if province in text:
+                is_in_vietnam = True
+                province_list.add(province)
+        province_list = list(province_list)
         
-    text = text.lower()
-    frequency = {}
+        keywords_TNMT = ['Bộ Tài nguyên và Môi trường', 'Bộ TN&MT'] 
+        for kw in keywords_TNMT:
+            if kw in text:
+                is_in_vietnam = True
+                
+        return is_in_vietnam, province_list
 
-    for name in law_names:
-        count = text.count(name.lower())
-        frequency[name] = count
 
-    max_frequency_name = max(frequency, key=frequency.get)
-    if frequency[max_frequency_name] >= 3:
-        return max_frequency_name
-    else:
-        return None
-    
+    @staticmethod
+    def check_aspect_sua_doi_luat(text):
+        law_file = "law.txt"
+
+        with open(law_file, 'r', encoding='utf-8') as file:
+            law_names = [line.strip() for line in file.readlines()]
+            
+        text = text.lower()
+        frequency = {}
+
+        for name in law_names:
+            count = text.count(name.lower())
+            frequency[name] = count
+
+        max_frequency_name = max(frequency, key=frequency.get)
+        if frequency[max_frequency_name] >= 3:
+            return max_frequency_name
+        else:
+            return None
+        
