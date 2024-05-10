@@ -6,7 +6,6 @@ from waitress import serve
 import json
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import os
-import itertools
 
 
 model_classification = None

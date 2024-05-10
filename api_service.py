@@ -1,10 +1,6 @@
-import re
 from flask import request, Response, Flask, render_template
-import torch
-from underthesea import sent_tokenize
 from waitress import serve
 import json
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import os
 from sp_func import setup, Classification, Summarization
 
