@@ -10,7 +10,7 @@ import itertools
 
 
 model_classification = None
-model_classification2 = None
+model_classification_subtopic = None
 model_summarization = None
 tokenizer_classification = None
 tokenizer_summarization = None
@@ -21,14 +21,16 @@ def setup():
     # Load 2 model_predictions + 1 model summarization
      
     global model_classification
-    global model_classification2
+    global model_classification_subtopic
     global model_summarization
 
     script_dir = os.path.dirname(os.path.realpath(__file__))
     model_cls_path = os.path.join(script_dir, "classification/vit5-cp-6660")
+    model2_cls_path = os.path.join(script_dir, "classification/subtopic-5710")
     model_summarization_path = os.path.join(script_dir, "summarization/bartpho-cp11000")
 
     model_classification = AutoModelForSeq2SeqLM.from_pretrained(model_cls_path)
+    model_classification_subtopic = AutoModelForSeq2SeqLM.from_pretrained(model2_cls_path)
     model_summarization = AutoModelForSeq2SeqLM.from_pretrained(model_summarization_path)
 
     # Load tokenizer
@@ -40,6 +42,7 @@ def setup():
     tokenizer_summarization = AutoTokenizer.from_pretrained(tokenizer_summarization_path)
 
     if model_classification is None \
+        or model_classification_subtopic is None \
             or tokenizer_classification is None:
         return Response(json.dumps({"error": "Model or tokenizer model_classification initialized"}), mimetype='application/json')
     if model_summarization is None \
@@ -51,7 +54,8 @@ def setup():
 
 
 class Summarization:
-    with open('dict_map.json', 'r', encoding='utf-8') as f:
+    dict_map_path_json = 'bow_folder/dict_map.json'
+    with open(dict_map_path_json, 'r', encoding='utf-8') as f:
         dict_map = json.load(f)
 
     @staticmethod
@@ -65,7 +69,7 @@ class Summarization:
         model_summarization.eval()
         with torch.no_grad():
             inputs = tokenizer_summarization(texts, padding=True, max_length=1024, truncation=True, return_tensors='pt')
-            outputs = model_summarization.generate(**inputs, max_length=512, num_beams=5,
+            outputs = model_summarization.generate(**inputs, max_length=2048, num_beams=5,
                                     early_stopping=True, no_repeat_ngram_size=3)
             prediction = tokenizer_summarization.batch_decode(outputs, skip_special_tokens=True)
         return prediction
@@ -157,35 +161,45 @@ class Classification:
         input_ids = inputs.input_ids
         attention_mask = inputs.attention_mask
     
-        # model predict
+        # model predict 4
         output_cls = model_classification.generate(
             input_ids=input_ids,
             max_length=max_target_length,
             attention_mask=attention_mask,
         )
-
+        
+        # model predict subtopic
+        output_cls_subtopic = model_classification_subtopic.generate(
+            input_ids=input_ids,
+            max_length=max_target_length,
+            attention_mask=attention_mask,
+        )
         predicted_cls = tokenizer_classification.decode(output_cls[0], skip_special_tokens=True)
-        return predicted_cls
+        predicted_subtopic = tokenizer_classification.decode(output_cls_subtopic[0], skip_special_tokens=True)
+        return predicted_cls, predicted_subtopic
 
     @staticmethod
     def classify_article(data):
         text = data['title'] + '. ' + data['anchor'] + '. ' + data['content']
         is_in_vietnam, province_list = Classification.check_in_VietNam(text)
         
-        prd_data = Classification.predict_cls(text)
-        prd_aspect_law = Classification.check_aspect_sua_doi_luat(text)
-        prd_topic, prd_sentiment, prd_sub_topic, prd_aspect = prd_data.split(';')
-            
-        print("prd_data:", data['id'],  prd_data)
-        # print("prd_data2:", prd_data2)
+        prd_data, prd_subtopic = Classification.predict_cls(text)
+        prd_topic, prd_sentiment, _, prd_aspect = prd_data.split(';')
+        prd_aspect_law = Classification.check_aspect_law(text)
         
-        if prd_aspect_law != None:
-            prd_aspect = prd_aspect + '. ' + prd_aspect_law
+        if prd_topic == "Không":
+            prd_subtopic = "Không"
+            
+        if prd_topic != "Không":
+            prd_aspect = [prd_aspect]
+            
+            if prd_aspect_law != False :
+                prd_aspect.append(prd_aspect_law)
             
         result = {
             "id"        : data['id'],                          
             "topic"     : prd_topic,                           
-            "sub_topic" : prd_sub_topic,                
+            "sub_topic" : prd_subtopic,                
             "aspect"    : prd_aspect,            
             "sentiment" : prd_sentiment,                      
             "province"  : province_list,
@@ -194,7 +208,7 @@ class Classification:
 
     @staticmethod
     def check_in_VietNam(text):
-        province_viet_nam_file = "province_viet_nam.txt"
+        province_viet_nam_file = "bow_folder/province_viet_nam.txt"
 
         with open(province_viet_nam_file, 'r', encoding='utf-8') as file:
             provinces = [line.replace("\n", "") for line in file.readlines()]
@@ -216,22 +230,29 @@ class Classification:
 
 
     @staticmethod
-    def check_aspect_sua_doi_luat(text):
-        law_file = "law.txt"
+    def check_aspect_law(text):
+        # open file
+        law_file = "bow_folder/aspect_law.txt"
 
         with open(law_file, 'r', encoding='utf-8') as file:
             law_names = [line.strip() for line in file.readlines()]
-            
+
+        # count frequency of law keywords
         text = text.lower()
-        frequency = {}
+        total_frq_law = 0
 
         for name in law_names:
             count = text.count(name.lower())
-            frequency[name] = count
-
-        max_frequency_name = max(frequency, key=frequency.get)
-        if frequency[max_frequency_name] >= 3:
-            return max_frequency_name
+            total_frq_law += count
+        
+        # calculate length/total frequency
+        threshold_law_frq = 10
+        threshold_leng_law_frq = 100
+        if total_frq_law > threshold_law_frq:
+            text_leng = len(text.split(' '))
+            ratio = text_leng/total_frq_law
+            if ratio < threshold_leng_law_frq:
+                return "Luật sửa đổi"
         else:
-            return None
+            return False
         

@@ -48,20 +48,20 @@ def predict_api():
                 {
                     "id"        :"abc123",
                     "title"     :"Thủ tướng chủ trì Phiên họp Chính phủ thường kỳ tháng 4",
-                    "anchor"   :"VOV.VN - ... quốc gia.",
+                    "anchor"    :"VOV.VN - ... quốc gia.",
                     "content"   :"Phát biểu ...kinh nghiệm."
                 }
             ]
         Return: request.json 
             [
                 {
-                    "id"        :"abc123",                               - lấy ở input
-                    "summary"   :"Sáng 4/5, ... quốc gia"                - giữ nguyên
-                    "topic"     :"yes",                                  - đã làm được - model 4
-                    "sub_topic" :"tài nguyên đất",                       - thêm "luật" - model 4
-                    "aspect"    :"chính sách quản lý",                   - đã làm được - model 4
-                    "sentiment" :"tích cực",                             - đã làm được - model 4
-                    "province"  : ["Hà Nội", "Hồ Chí Minh", "Bắc Giang"] - đã làm được - rule 
+                    "id"        :"abc123",                               
+                    "summary"   :"Sáng 4/5, ... quốc gia"               
+                    "topic"     :"yes",                                  
+                    "sub_topic" :"tài nguyên đất",                      
+                    "aspect"    :"chính sách quản lý",                   
+                    "sentiment" :"tích cực",                             
+                    "province"  : ["Hà Nội", "Hồ Chí Minh", "Bắc Giang"] 
                 },
             ]
     """
@@ -108,7 +108,7 @@ def summarize_api():
     data = request.json
    
     # decode output
-    summary = Summarization.getDocSummary(data, sentnum=5)
+    summary = Summarization.getDocSummary(data, sentnum=3)
     
     return Response(json.dumps(summary), mimetype='application/json')
 
