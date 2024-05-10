@@ -1,3 +1,3 @@
-classification
-summarization
-__pycache__
+app/classification
+app/summarization
+app/__pycache__

@@ -1,5 +1,5 @@
 import re
-from flask import request, Response, Flask, render_template
+from flask import Response
 import torch
 from underthesea import sent_tokenize
 from waitress import serve
@@ -49,11 +49,10 @@ def setup():
         return Response(json.dumps({"error": "Model or tokenizer model_summarization initialized"}), mimetype='application/json')
     
     print("Set up model and tokenizer successfully")
-    print("Open local link: http://localhost:8080/classification")
 
 
 class Summarization:
-    dict_map_path_json = 'bow_folder/dict_map.json'
+    dict_map_path_json = 'app/bow_folder/dict_map.json'
     with open(dict_map_path_json, 'r', encoding='utf-8') as f:
         dict_map = json.load(f)
 
@@ -207,7 +206,7 @@ class Classification:
 
     @staticmethod
     def check_in_VietNam(text):
-        province_viet_nam_file = "bow_folder/province_viet_nam.txt"
+        province_viet_nam_file = "app/bow_folder/province_viet_nam.txt"
 
         with open(province_viet_nam_file, 'r', encoding='utf-8') as file:
             provinces = [line.replace("\n", "") for line in file.readlines()]
@@ -231,7 +230,7 @@ class Classification:
     @staticmethod
     def check_aspect_law(text):
         # open file
-        law_file = "bow_folder/aspect_law.txt"
+        law_file = "app/bow_folder/aspect_law.txt"
 
         with open(law_file, 'r', encoding='utf-8') as file:
             law_names = [line.strip() for line in file.readlines()]

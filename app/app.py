@@ -9,30 +9,10 @@ app = Flask(__name__)
 
 
 
-
-@app.route("/classification")
+@app.route("/")
 def root():
-    """
-    Site main page handler function.
-    :return: Content of index.html file
-    """
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    index_html_path = os.path.join(current_dir, "index_cls.html")
-    with open(index_html_path, encoding="utf-8") as file:
-        html_content = file.read()
-    return html_content
+    return Response(json.dumps({"Application": "TNMT api service"}), mimetype='application/json')
 
-@app.route("/summarization")
-def summarization_page():
-    """
-    Site main page handler function.
-    :return: Content of index.html file
-    """
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    index_html_path = os.path.join(current_dir, "index_sum.html")
-    with open(index_html_path, encoding="utf-8") as file:
-        html_content = file.read()
-    return html_content
 
 @app.route("/predict", methods=["POST"])
 def predict_api():
@@ -69,8 +49,6 @@ def predict_api():
         cls_data = Classification.classify_article(data)
         array_results.append(cls_data)
     
-    print(array_results)
-    # return json.dumps(array_results)
     return Response(json.dumps(array_results), mimetype='application/json')
 
 @app.route("/summarize", methods=["POST"])
@@ -136,7 +114,6 @@ def sum_cls_api():
    
     # Summarization
     array_summary = Summarization.getDocSummary(array_data, sentnum=5)
-    print("array_summary: ", array_summary)
     
     # Classification
     array_cls = []
@@ -144,7 +121,6 @@ def sum_cls_api():
     for data in array_data:
         cls_data = Classification.classify_article(data)
         array_cls.append(cls_data)
-    print("array_cls:", array_cls)
     
     # merge the results
     array_results = []
@@ -168,4 +144,4 @@ def sum_cls_api():
 # Call the setup function before starting the server
 setup()
 
-serve(app, host='0.0.0.0', port=8080)
+serve(app, host='0.0.0.0', port=8081)
