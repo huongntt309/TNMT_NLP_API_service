@@ -15,10 +15,12 @@ def root():
 
 
 @app.route("/classify", methods=["POST"])
-def predict_api():
+def classify_api():
     """
        Input, Output described in README.md
     """
+    print("Classifying ...")
+    
     # Load the corpus from the request
     array_data = request.json
     array_results = []
@@ -28,6 +30,8 @@ def predict_api():
         cls_data["summary"] = ""
         array_results.append(cls_data)
     
+    print("Classification process has finished")
+    
     return Response(json.dumps(array_results), mimetype='application/json')
 
 @app.route("/summarize", methods=["POST"])
@@ -35,6 +39,8 @@ def summarize_api():
     """
        Input, Output described in README.md
     """
+    print("Summarizing ...")
+    
     # Load the corpus from the request
     data = request.json
    
@@ -48,7 +54,8 @@ def summarize_api():
         result["aspect"] =  ""
         result["sentiment"] = ""
         result["province"] = []
-        
+    
+    print("Summarization process has finished")
     return Response(json.dumps(summary_results), mimetype='application/json')
 
 
@@ -60,7 +67,7 @@ def sum_cls_api():
     # Load the corpus from the request
     array_data = request.json
     
-    print("Inferencing ...")
+    print("Classifying and Summarizing ...")
     
     # Summarization
     array_summary = Summarization.getDocSummary(array_data, sentnum=5)
@@ -87,7 +94,8 @@ def sum_cls_api():
                 "sentiment" : cls_object["sentiment"],                      
                 "province"  : cls_object["province"],
             })
-    # return json.dumps(array_results)
+            
+    print("Classification and Summarization process has finished")
     return Response(json.dumps(array_results), mimetype='application/json')
 
 

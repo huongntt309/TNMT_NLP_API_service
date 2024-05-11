@@ -14,7 +14,7 @@ model_classification_subtopic = None
 model_summarization = None
 tokenizer_classification = None
 tokenizer_summarization = None
-
+device = None
 def transformer_cache():
     if platform.system() == "Windows":
         print("Windows detected. Assigning cache directory to Transformers in AppData\Local.")
@@ -32,11 +32,18 @@ def transformer_cache():
         del transformers_cache_directory
     else:
         print("Windows not detected. Assignment of Transformers cache directory not necessary.")
-
+        
+def setup_device():
+    global device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print("Setup device:", device)
+    
 # set up functions
 def setup():
     # Load 2 model_predictions + 1 model summarization
     transformer_cache()
+    setup_device()
+    
     global model_classification
     global model_classification_subtopic
     global model_summarization
@@ -46,9 +53,9 @@ def setup():
     model2_cls_path = os.path.join(script_dir, "classification/subtopic-5710")
     model_summarization_path = os.path.join(script_dir, "summarization/bartpho-cp11000")
 
-    model_classification = AutoModelForSeq2SeqLM.from_pretrained(model_cls_path)
-    model_classification_subtopic = AutoModelForSeq2SeqLM.from_pretrained(model2_cls_path)
-    model_summarization = AutoModelForSeq2SeqLM.from_pretrained(model_summarization_path)
+    model_classification = AutoModelForSeq2SeqLM.from_pretrained(model_cls_path).to(device)
+    model_classification_subtopic = AutoModelForSeq2SeqLM.from_pretrained(model2_cls_path).to(device)
+    model_summarization = AutoModelForSeq2SeqLM.from_pretrained(model_summarization_path).to(device)
 
     # Load tokenizer
     global tokenizer_classification
@@ -81,10 +88,11 @@ class Summarization:
         return text
 
     @staticmethod
-    def generateSummary(sentnum, texts):
+    def generateSummary(texts):
         model_summarization.eval()
         with torch.no_grad():
             inputs = tokenizer_summarization(texts, padding=True, max_length=1024, truncation=True, return_tensors='pt')
+            inputs = {key: value.to(device) for key, value in inputs.items()}
             outputs = model_summarization.generate(**inputs, max_length=2048, num_beams=5,
                                     early_stopping=True, no_repeat_ngram_size=3)
             prediction = tokenizer_summarization.batch_decode(outputs, skip_special_tokens=True)
@@ -144,7 +152,7 @@ class Summarization:
                     text, sents[ID] = Summarization.divideText(title_lens[ID], prediction_b[ID], sents[ID])
                     text_b.append(str(sentnum) + ' câu. Tên: <' + titles[ID] + '>. Nội dung: <' + prediction_b[ID] + ' ' + text + '>')
 
-                summs = Summarization.generateSummary(sentnum, text_b)
+                summs = Summarization.generateSummary(text_b)
                 removeIDs = []
                 for i, ID in enumerate(batchIDs):
                     prediction_b[ID] = summs[i]
@@ -157,7 +165,6 @@ class Summarization:
 
 
 class Classification:
-    
     @staticmethod
     def predict_cls(text):
         def preprocess_text(text):
@@ -170,8 +177,8 @@ class Classification:
         # Perform detection
         max_target_length = 256
         inputs = tokenizer_classification(text, return_tensors="pt")
-        input_ids = inputs.input_ids
-        attention_mask = inputs.attention_mask
+        input_ids = inputs.input_ids.to(device)
+        attention_mask = inputs.attention_mask.to(device)
     
         # model predict 4
         output_cls = model_classification.generate(
@@ -193,7 +200,7 @@ class Classification:
     @staticmethod
     def classify_article(data):
         text = data['title'] + '. ' + data['anchor'] + '. ' + data['content']
-        is_in_vietnam, province_list = Classification.check_in_VietNam(text)
+        _, province_list = Classification.check_VietNam_provinces(text)
         
         try:
             prd_data, prd_subtopic = Classification.predict_cls(text)
@@ -243,7 +250,7 @@ class Classification:
             return result
 
     @staticmethod
-    def check_in_VietNam(text):
+    def check_VietNam_provinces(text):
         province_viet_nam_file = "app/bow_folder/province_viet_nam.txt"
 
         with open(province_viet_nam_file, 'r', encoding='utf-8') as file:
