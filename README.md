@@ -1,7 +1,7 @@
 # TNMT API Service
 
 ## Overview
-The TNMT API Service is designed to provide various functionalities for classifying and summarizing news articles. It offers endpoints for classifying articles, summarizing content, and combining both classification and summarization.
+The TNMT API Service is designed to provide various functionalities for classifying and summarizing Natural Resources and Environment news articles. It offers endpoints for classifying articles, summarizing content, and combining both classification and summarization.
 
 ## Installation and Usage
 To use the TNMT API Service, you have two options:
@@ -94,9 +94,9 @@ Here is an example of how to use the API endpoints:
 ...
 
 ## Technology used
-1. ViT5 model from 'VietAI/viT5'
-2. bartpho model from 'VinAI/bartpho'
-3. Flask API
+1. "VietAI/vit5-base": ViT5, Pre-trained Text-to-Text Transformer for Vietnamese Language Generation.
+2. "vinai/bartpho-syllable": BARTpho, Pre-trained Sequence-to-Sequence Models for Vietnamese.
+3. Flask API: A lightweight web framework for Python, offering simplicity and flexibility for building RESTful APIs.
 
 ## Contact
 For any inquiries or support, please contact [huonguet8@gmail.com](mailto:huonguet8@gmail.com).
