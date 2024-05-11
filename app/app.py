@@ -94,4 +94,4 @@ def sum_cls_api():
 # Call the setup function before starting the server
 setup()
 
-serve(app, host='0.0.0.0', port=8080)
+serve(app, host='0.0.0.0', port=5000)

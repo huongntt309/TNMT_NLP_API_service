@@ -48,3 +48,16 @@
     }
 ]
 ```
+
+## API Output Exceptions
+```bash
+{
+    "id"        : "3",
+    "summary"   : "...",
+    "topic"     : "Exceptions",
+    "sub_topic" : [],
+    "aspect"    : [],
+    "sentiment" : "Không",
+    "province"  : []
+}
+```
