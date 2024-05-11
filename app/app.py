@@ -87,10 +87,10 @@ def summarize_api():
     return Response(json.dumps(summary), mimetype='application/json')
 
 
-@app.route("/sum_cls", methods=["POST"])
+@app.route("/sum-cls", methods=["POST"])
 def sum_cls_api():
     """
-        Handler of /sum_cls POST endpoint
+        Handler of /sum-cls POST endpoint
         Input: request.json 
             ex: 
             [
@@ -111,7 +111,9 @@ def sum_cls_api():
     """
     # Load the corpus from the request
     array_data = request.json
-   
+    
+    print("Inferencing ...")
+    
     # Summarization
     array_summary = Summarization.getDocSummary(array_data, sentnum=5)
     
@@ -144,4 +146,4 @@ def sum_cls_api():
 # Call the setup function before starting the server
 setup()
 
-serve(app, host='0.0.0.0', port=8081)
+serve(app, host='0.0.0.0', port=5000)

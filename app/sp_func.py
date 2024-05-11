@@ -1,3 +1,4 @@
+import ast
 import re
 from flask import Response
 import torch
@@ -6,7 +7,7 @@ from waitress import serve
 import json
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import os
-
+import platform
 
 model_classification = None
 model_classification_subtopic = None
@@ -14,11 +15,28 @@ model_summarization = None
 tokenizer_classification = None
 tokenizer_summarization = None
 
+def transformer_cache():
+    if platform.system() == "Windows":
+        print("Windows detected. Assigning cache directory to Transformers in AppData\Local.")
+        transformers_cache_directory = os.path.join(os.getenv('LOCALAPPDATA'), 'transformers_cache')
+        if not os.path.exists(transformers_cache_directory):
+            try:
+                os.mkdir(transformers_cache_directory)
+                print(f"First launch. Directory '{transformers_cache_directory}' created successfully.")
+            except OSError as e:
+                print(f"Error creating directory '{transformers_cache_directory}': {e}")
+        else:
+            print(f"Directory '{transformers_cache_directory}' already exists.")
+        os.environ['TRANSFORMERS_CACHE'] = transformers_cache_directory
+        print("Environment variable assigned.")
+        del transformers_cache_directory
+    else:
+        print("Windows not detected. Assignment of Transformers cache directory not necessary.")
 
 # set up functions
 def setup():
     # Load 2 model_predictions + 1 model summarization
-     
+    transformer_cache()
     global model_classification
     global model_classification_subtopic
     global model_summarization
@@ -181,28 +199,43 @@ class Classification:
         text = data['title'] + '. ' + data['anchor'] + '. ' + data['content']
         is_in_vietnam, province_list = Classification.check_in_VietNam(text)
         
-        prd_data, prd_subtopic = Classification.predict_cls(text)
-        prd_topic, prd_sentiment, _, prd_aspect = prd_data.split(';')
-        prd_aspect_law = Classification.check_aspect_law(text)
-        
-        if prd_topic == "Không":
-            prd_subtopic = "Không"
+        try:
+            prd_data, prd_subtopic = Classification.predict_cls(text)
+            prd_topic, prd_sentiment, prd_subtopic_model4, prd_aspect = prd_data.split(';')
+            prd_aspect_law = Classification.check_aspect_law(text)
+            prd_subtopic = ast.literal_eval(prd_subtopic)
             
-        if prd_topic != "Không":
-            prd_aspect = [prd_aspect]
-            
-            if prd_aspect_law != False :
-                prd_aspect.append(prd_aspect_law)
-            
-        result = {
-            "id"        : data['id'],                          
-            "topic"     : prd_topic,                           
-            "sub_topic" : prd_subtopic,                
-            "aspect"    : prd_aspect,            
-            "sentiment" : prd_sentiment,                      
-            "province"  : province_list,
-        }
-        return result
+            if prd_topic == "Không":
+                prd_subtopic = "Không"
+                
+            elif prd_topic != "Không":
+                
+                prd_aspect = [prd_aspect]
+                if prd_aspect_law != False :
+                    prd_aspect.append(prd_aspect_law)
+                    
+                prd_subtopic.append(prd_subtopic_model4)
+                prd_subtopic = list(set(prd_subtopic))
+                
+            result = {
+                "id"        : data['id'],                          
+                "topic"     : prd_topic,                           
+                "sub_topic" : prd_subtopic,                
+                "aspect"    : prd_aspect,            
+                "sentiment" : prd_sentiment,                      
+                "province"  : province_list,
+            }
+            return result
+        except:
+            result = {
+                "id"        : data['id'],                          
+                "topic"     : "Exceptions",                           
+                "sub_topic" : "Exceptions",                
+                "aspect"    : "Exceptions",            
+                "sentiment" : "Exceptions",                      
+                "province"  : [],
+            }
+            return result
 
     @staticmethod
     def check_in_VietNam(text):
