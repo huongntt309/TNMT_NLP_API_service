@@ -14,32 +14,10 @@ def root():
     return Response(json.dumps({"Application": "TNMT api service"}), mimetype='application/json')
 
 
-@app.route("/predict", methods=["POST"])
+@app.route("/classify", methods=["POST"])
 def predict_api():
     """
-        Handler of /detect POST endpoint
-        Input: request.json 
-            ex: 
-            [
-                {
-                    "id"        :"abc123",
-                    "title"     :"Thủ tướng chủ trì Phiên họp Chính phủ thường kỳ tháng 4",
-                    "anchor"    :"VOV.VN - ... quốc gia.",
-                    "content"   :"Phát biểu ...kinh nghiệm."
-                }
-            ]
-        Return: request.json 
-            [
-                {
-                    "id"        :"abc123",                               
-                    "summary"   :"Sáng 4/5, ... quốc gia"               
-                    "topic"     :"yes",                                  
-                    "sub_topic" :"tài nguyên đất",                      
-                    "aspect"    :"chính sách quản lý",                   
-                    "sentiment" :"tích cực",                             
-                    "province"  : ["Hà Nội", "Hồ Chí Minh", "Bắc Giang"] 
-                },
-            ]
+       Input, Output described in README.md
     """
     # Load the corpus from the request
     array_data = request.json
@@ -47,6 +25,7 @@ def predict_api():
     
     for data in array_data:
         cls_data = Classification.classify_article(data)
+        cls_data["summary"] = ""
         array_results.append(cls_data)
     
     return Response(json.dumps(array_results), mimetype='application/json')
@@ -54,60 +33,29 @@ def predict_api():
 @app.route("/summarize", methods=["POST"])
 def summarize_api():
     """
-        Handler of /summarize POST endpoint
-        Input: request.json 
-            ex: 
-            [
-                {
-                    "id"        :"abc123",
-                    "title"     :"Thủ tướng chủ trì Phiên họp Chính phủ thường kỳ tháng 4",
-                    "anchor"    :"VOV.VN - ... quốc gia.",
-                    "content"   :"Phát biểu ...kinh nghiệm."
-                }
-            ]
-        Return: request.json 
-            [
-                {
-                    "id"        :"abc123",                               
-                    "summary"   :"Sáng 4/5, ... quốc gia"                
-                    "topic"     :"yes",                                  
-                    "sub_topic" :"tài nguyên đất",                       
-                    "aspect"    :"chính sách quản lý",                   
-                    "sentiment" :"tích cực",                             
-                    "province"  : ["Hà Nội", "Hồ Chí Minh", "Bắc Giang"] 
-                },
-            ]
+       Input, Output described in README.md
     """
     # Load the corpus from the request
     data = request.json
    
     # decode output
-    summary = Summarization.getDocSummary(data, sentnum=3)
+    summary_results = Summarization.getDocSummary(data, sentnum=3)
     
-    return Response(json.dumps(summary), mimetype='application/json')
+    # Add empty fields to each object in summary_results
+    for result in summary_results:
+        result["topic"] = ""
+        result["sub_topic"] = ""
+        result["aspect"] =  ""
+        result["sentiment"] = ""
+        result["province"] = []
+        
+    return Response(json.dumps(summary_results), mimetype='application/json')
 
 
 @app.route("/sum-cls", methods=["POST"])
 def sum_cls_api():
     """
-        Handler of /sum-cls POST endpoint
-        Input: request.json 
-            ex: 
-            [
-                {
-                    "id"        :"abc123",
-                    "title"     :"Thủ tướng chủ trì Phiên họp Chính phủ thường kỳ tháng 4",
-                    "anchor"    :"VOV.VN - ... quốc gia.",
-                    "content"   :"Phát biểu ...kinh nghiệm."
-                }
-            ]
-        Return: request.json 
-            [
-                {
-                    "id"        :"abc123",                               
-                    "summary"   :"Sáng 4/5, ... quốc gia"                
-                },
-            ]
+       Input, Output described in README.md
     """
     # Load the corpus from the request
     array_data = request.json
@@ -146,4 +94,4 @@ def sum_cls_api():
 # Call the setup function before starting the server
 setup()
 
-serve(app, host='0.0.0.0', port=5000)
+serve(app, host='0.0.0.0', port=8080)

@@ -111,24 +111,20 @@ class Summarization:
     def getDocSummary(docs, sentnum):
         '''
         INPUT:
-            docs: json data
             [
                 {
                     id:
                     title:
                     anchor:
                     content:
-                },
-                {}
+                }
             ]
         OUTPUT:
-            res:
             [
                 {
                     id:
                     summary:
-                },
-                {}
+                }
             ] 
         '''
         sents, titles, title_lens, res = {},{},{},[]
@@ -206,16 +202,25 @@ class Classification:
             prd_subtopic = ast.literal_eval(prd_subtopic)
             
             if prd_topic == "Không":
-                prd_subtopic = "Không"
+                result = {
+                    "id"        : data['id'],                          
+                    "topic"     : "Không",                           
+                    "sub_topic" : [],                
+                    "aspect"    : [],         
+                    "sentiment" : "Không",                      
+                    "province"  : [],
+                }
+                return result
                 
             elif prd_topic != "Không":
                 
                 prd_aspect = [prd_aspect]
                 if prd_aspect_law != False :
                     prd_aspect.append(prd_aspect_law)
-                    
-                prd_subtopic.append(prd_subtopic_model4)
-                prd_subtopic = list(set(prd_subtopic))
+                
+                if prd_subtopic_model4.lower() not in map(str.lower, prd_subtopic):
+                    prd_subtopic.append(prd_subtopic_model4)
+                   
                 
             result = {
                 "id"        : data['id'],                          
@@ -230,9 +235,9 @@ class Classification:
             result = {
                 "id"        : data['id'],                          
                 "topic"     : "Exceptions",                           
-                "sub_topic" : "Exceptions",                
-                "aspect"    : "Exceptions",            
-                "sentiment" : "Exceptions",                      
+                "sub_topic" : [],                
+                "aspect"    : [],         
+                "sentiment" : "Không",                      
                 "province"  : [],
             }
             return result
