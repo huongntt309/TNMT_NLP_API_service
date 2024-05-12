@@ -91,29 +91,25 @@ class Summarization:
     def generateSummary(texts):
         model_summarization.eval()
         with torch.no_grad():
-            inputs = tokenizer_summarization(texts, padding=True, max_length=1024, truncation=True, return_tensors='pt')
+            inputs = tokenizer_summarization(texts, padding=True, max_length=1024, truncation=True, return_tensors='pt').to(device)
             inputs = {key: value.to(device) for key, value in inputs.items()}
-            outputs = model_summarization.generate(**inputs, max_length=2048, num_beams=5,
+            outputs = model_summarization.generate(**inputs, max_length=1024, num_beams=5,
                                     early_stopping=True, no_repeat_ngram_size=3)
             prediction = tokenizer_summarization.batch_decode(outputs, skip_special_tokens=True)
         return prediction
 
     @staticmethod
-    def divideText(title_len, prediction, sents, lim=850):
-        sentlen = [len(s.split(' ')) for s in sents]
+    def divideText(title_len, prediction, sentlen, lim=900):
         sentid = 0
-        curlen, curtext = title_len + len(prediction.split(' ')), ''
-        
-        while sentid < len(sents) and curlen + sentlen[sentid] <= lim:
-            curtext += sents[sentid] + ' '
+        curlen = title_len + len(prediction.split(' '))
+        while sentid < len(sentlen) and curlen + sentlen[sentid] <= lim:
             curlen += sentlen[sentid]
             sentid += 1
 
-        if sentid < len(sents) and curtext == '':
-            curtext += sents[sentid] + ' '
+        if sentid < len(sentlen) and sentid == 0:
             curlen += sentlen[sentid]
             sentid += 1
-        return curtext, sents[sentid:]
+        return sentid
 
     @staticmethod
     def getDocSummary(docs, sentnum):
@@ -128,38 +124,41 @@ class Summarization:
                 }
             ]
         OUTPUT:
-            [
-                {
-                    id:
-                    summary:
-                }
-            ] 
+            {
+                id: summary
+            }
         '''
-        sents, titles, title_lens, res = {},{},{},[]
-        batch_size = 8
-        
+
+        sents, titles, title_lens, sent_lens, res = {}, {}, {}, {}, {}
+        batch_size = 4
+
         for d in docs:
             sents[d['id']] = sent_tokenize(Summarization.replace_all(d['anchor'] + '.\n' + d['content']))
             titles[d['id']] = Summarization.replace_all(d['title'])
             title_lens[d['id']] = len(titles[d['id']].split(' '))
-        
+            sent_lens[d['id']] = [len(s.split(' ')) for s in sents[d['id']]]
+
+        docs = sorted(docs, key=lambda x: sum(sent_lens[x['id']]) + title_lens[d['id']])
+
         for i in range(0, len(docs), batch_size):
-            batchIDs = list(titles.keys())[i:i+batch_size]
-            prediction_b = {i:'' for i in batchIDs}
+            batchIDs = [d['id'] for d in docs[i:i + batch_size]]
+            prediction_b = {i: '' for i in batchIDs}
             while len(batchIDs):
                 text_b = []
                 for ID in batchIDs:
-                    text, sents[ID] = Summarization.divideText(title_lens[ID], prediction_b[ID], sents[ID])
+                    nextID = Summarization.divideText(title_lens[ID], prediction_b[ID], sent_lens[ID])
+                    text = ' '.join(sents[ID][:nextID])
+                    sents[ID], sent_lens[ID] = sents[ID][nextID:], sent_lens[ID][nextID:]
                     text_b.append(str(sentnum) + ' câu. Tên: <' + titles[ID] + '>. Nội dung: <' + prediction_b[ID] + ' ' + text + '>')
 
                 summs = Summarization.generateSummary(text_b)
                 removeIDs = []
-                for i, ID in enumerate(batchIDs):
-                    prediction_b[ID] = summs[i]
+                for ii, ID in enumerate(batchIDs):
+                    prediction_b[ID] = summs[ii]
                     if sents[ID] == []:
-                        res.append({'id': ID, 'summary': summs[i]})
+                        res[ID] = summs[ii]
                         removeIDs.append(ID)
-                
+
                 batchIDs = [i for i in batchIDs if i not in removeIDs]
         return res
 
