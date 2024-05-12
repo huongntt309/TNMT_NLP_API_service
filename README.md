@@ -10,11 +10,11 @@ To use the TNMT API Service, you have two options:
 1. Ensure you have Docker installed on your system.
 2. Pull the TNMT API Docker image from Docker Hub:
     ```
-    docker pull huongntt/tnmt-api-service:latest
+    docker pull huongntt/tnmt-api-service-server:v1
     ```
 3. Run the Docker container:
     ```
-    docker run -p 5000:5000 huongntt/tnmt-api-service:latest
+    docker run -p 5000:5000 huongntt/tnmt-api-service-server:v1
     ```
 4. The API service will be accessible at `http://localhost:5000`.
 
@@ -91,7 +91,9 @@ Here is an example of how to use the API endpoints:
     }
 ]
 ```
-...
+
+### API Testing
+We create a json test file in **app/bow_folder/21-test-cases.json**, you can use this data at Request Body, then test this at `http://localhost:5000/sum-cls`.
 
 ## Technology used
 1. "VietAI/vit5-base": ViT5, Pre-trained Text-to-Text Transformer for Vietnamese Language Generation.
