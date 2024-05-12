@@ -175,15 +175,24 @@ class Classification:
         )
         predicted_cls = [tokenizer_classification.decode(out, skip_special_tokens=True) for out in output_cls]
 
+        tnmt_indices = [index for index, value in enumerate(predicted_cls) if value != "Không"]
+        tnmt_indices = torch.tensor(tnmt_indices)
+
+        selected_input_ids_tensor = torch.index_select(input_ids, 0, tnmt_indices)
+        selected_attention_mask_tensor = torch.index_select(attention_mask, 0, tnmt_indices)
         # model predict subtopic
         output_cls_subtopic = model_classification_subtopic.generate(
-            input_ids=input_ids,
+            input_ids=selected_input_ids_tensor,
             max_length=max_target_length,
-            attention_mask=attention_mask,
+            attention_mask=selected_attention_mask_tensor,
         )
-
         predicted_subtopic = [tokenizer_classification.decode(out, skip_special_tokens=True) for out in output_cls_subtopic]
-        return predicted_cls, predicted_subtopic
+        predicted_subtopic_final = ["Không"] * len(texts)
+        i = 0
+        for idx in tnmt_indices:
+            predicted_subtopic_final[idx] = predicted_subtopic[i]
+            i += 1
+        return predicted_cls, predicted_subtopic_final
 
     @staticmethod
     def classify_article(data):
