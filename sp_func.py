@@ -196,34 +196,41 @@ class Classification:
 
     @staticmethod
     def classify_article(data):
-        batch_data = []
-        for text in data:
-            batch_data.append(text['title'] + '. ' + text['anchor'] + '. ' + text['content'])
-        is_in_vietnam, province_list = Classification.check_in_VietNam(batch_data)
-        prd_data, prd_subtopic = Classification.predict_cls(batch_data)
         results = []
-        for i in range(len(batch_data)):
-            prd_aspect_law = Classification.check_aspect_law(batch_data[i])
-            print(prd_data[i])
-            prd_topic, prd_sentiment, _, prd_aspect = prd_data[i].split(';')
-            prd_subtopic_result = prd_subtopic[i]
-            if prd_topic == "Không":
-                prd_subtopic_result = "Không"
+        batch_size = 4
+        num_batches = (len(data) + batch_size - 1) // batch_size
+        for i in range(num_batches):
+            start_idx = i * batch_size
+            end_idx = min((i + 1) * batch_size, len(data))
+            batch = data[start_idx:end_idx]
+            batch_data = []
+            for text in batch:
+                batch_data.append(text['title'] + '. ' + text['anchor'] + '. ' + text['content'])
+            is_in_vietnam, province_list = Classification.check_in_VietNam(batch_data)
+            prd_data, prd_subtopic = Classification.predict_cls(batch_data)
 
-            if prd_topic != "Không":
-                prd_aspect = [prd_aspect]
+            for j in range(len(batch_data)):
+                prd_aspect_law = Classification.check_aspect_law(batch_data[j])
+                print(prd_data[j])
+                prd_topic, prd_sentiment, _, prd_aspect = prd_data[j].split(';')
+                prd_subtopic_result = prd_subtopic[j]
+                if prd_topic == "Không":
+                    prd_subtopic_result = "Không"
 
-                if prd_aspect_law != False:
-                    prd_aspect.append(prd_aspect_law)
-            result = {
-                "id": data[i]['id'],
-                "topic": prd_topic,
-                "sub_topic": prd_subtopic_result,
-                "aspect": prd_aspect,
-                "sentiment": prd_sentiment,
-                "province": province_list[i],
-            }
-            results.append(result)
+                if prd_topic != "Không":
+                    prd_aspect = [prd_aspect]
+
+                    if prd_aspect_law != False:
+                        prd_aspect.append(prd_aspect_law)
+                result = {
+                    "id": batch[j]['id'],
+                    "topic": prd_topic,
+                    "sub_topic": prd_subtopic_result,
+                    "aspect": prd_aspect,
+                    "sentiment": prd_sentiment,
+                    "province": province_list[j],
+                }
+                results.append(result)
         return results
 
     @staticmethod

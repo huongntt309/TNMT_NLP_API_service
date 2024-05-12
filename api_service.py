@@ -62,20 +62,7 @@ def predict_api():
     """
     # Load the corpus from the request
     array_data = request.json
-    array_results = []
-
-    # for data in array_data:
-    #     cls_data = Classification.classify_article(array_data)
-    #     array_results.append(cls_data)
-    batch_size = 4
-    num_batches = (len(array_data) + batch_size - 1) // batch_size
-    for i in range(num_batches):
-        start_idx = i * batch_size
-        end_idx = min((i + 1) * batch_size, len(array_data))
-        batch = array_data[start_idx:end_idx]
-        cls_data = Classification.classify_article(batch)
-        array_results.extend(cls_data)
-
+    array_results = Classification.classify_article(array_data)
     print(array_results)
     # return json.dumps(array_results)
     return Response(json.dumps(array_results), mimetype='application/json')
@@ -142,17 +129,13 @@ def sum_cls_api():
     # Load the corpus from the request
     array_data = request.json
 
+    # Classification
+    array_cls = Classification.classify_article(array_data)
+    print("array_cls:", array_cls)
+
     # Summarization
     array_summary = Summarization.getDocSummary(array_data, sentnum=5)
     print("array_summary: ", array_summary)
-
-    # Classification
-    array_cls = []
-
-    for data in array_data:
-        cls_data = Classification.classify_article(data)
-        array_cls.append(cls_data)
-    print("array_cls:", array_cls)
 
     # merge the results
     array_results = []
