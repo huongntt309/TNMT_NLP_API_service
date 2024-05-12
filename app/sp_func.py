@@ -1,4 +1,5 @@
 import ast
+from collections import defaultdict
 import re
 from flask import Response
 import torch
@@ -35,8 +36,8 @@ def transformer_cache():
         
 def setup_device():
     global device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("Setup device:", device)
+    device = torch.device('cpu')
+    print("Setup device: CPU")
     
 # set up functions
 def setup():
@@ -91,29 +92,25 @@ class Summarization:
     def generateSummary(texts):
         model_summarization.eval()
         with torch.no_grad():
-            inputs = tokenizer_summarization(texts, padding=True, max_length=1024, truncation=True, return_tensors='pt')
+            inputs = tokenizer_summarization(texts, padding=True, max_length=1024, truncation=True, return_tensors='pt').to(device)
             inputs = {key: value.to(device) for key, value in inputs.items()}
-            outputs = model_summarization.generate(**inputs, max_length=2048, num_beams=5,
+            outputs = model_summarization.generate(**inputs, max_length=1024, num_beams=5,
                                     early_stopping=True, no_repeat_ngram_size=3)
             prediction = tokenizer_summarization.batch_decode(outputs, skip_special_tokens=True)
         return prediction
 
     @staticmethod
-    def divideText(title_len, prediction, sents, lim=850):
-        sentlen = [len(s.split(' ')) for s in sents]
+    def divideText(title_len, prediction, sentlen, lim=900):
         sentid = 0
-        curlen, curtext = title_len + len(prediction.split(' ')), ''
-        
-        while sentid < len(sents) and curlen + sentlen[sentid] <= lim:
-            curtext += sents[sentid] + ' '
+        curlen = title_len + len(prediction.split(' '))
+        while sentid < len(sentlen) and curlen + sentlen[sentid] <= lim:
             curlen += sentlen[sentid]
             sentid += 1
 
-        if sentid < len(sents) and curtext == '':
-            curtext += sents[sentid] + ' '
+        if sentid < len(sentlen) and sentid == 0:
             curlen += sentlen[sentid]
             sentid += 1
-        return curtext, sents[sentid:]
+        return sentid
 
     @staticmethod
     def getDocSummary(docs, sentnum):
@@ -128,126 +125,179 @@ class Summarization:
                 }
             ]
         OUTPUT:
-            [
-                {
-                    id:
-                    summary:
-                }
-            ] 
+            {
+                id: 
+                summary:
+            }
         '''
-        sents, titles, title_lens, res = {},{},{},[]
-        batch_size = 8
-        
+
+        sents, titles, title_lens, sent_lens = {}, {}, {}, {}
+        res = defaultdict(str)
+        batch_size = 4
+
         for d in docs:
             sents[d['id']] = sent_tokenize(Summarization.replace_all(d['anchor'] + '.\n' + d['content']))
             titles[d['id']] = Summarization.replace_all(d['title'])
             title_lens[d['id']] = len(titles[d['id']].split(' '))
-        
+            sent_lens[d['id']] = [len(s.split(' ')) for s in sents[d['id']]]
+
+        docs = sorted(docs, key=lambda x: sum(sent_lens[x['id']]) + title_lens[d['id']])
+
         for i in range(0, len(docs), batch_size):
-            batchIDs = list(titles.keys())[i:i+batch_size]
-            prediction_b = {i:'' for i in batchIDs}
+            batchIDs = [d['id'] for d in docs[i:i + batch_size]]
+            prediction_b = {i: '' for i in batchIDs}
             while len(batchIDs):
                 text_b = []
                 for ID in batchIDs:
-                    text, sents[ID] = Summarization.divideText(title_lens[ID], prediction_b[ID], sents[ID])
+                    nextID = Summarization.divideText(title_lens[ID], prediction_b[ID], sent_lens[ID])
+                    text = ' '.join(sents[ID][:nextID])
+                    sents[ID], sent_lens[ID] = sents[ID][nextID:], sent_lens[ID][nextID:]
                     text_b.append(str(sentnum) + ' câu. Tên: <' + titles[ID] + '>. Nội dung: <' + prediction_b[ID] + ' ' + text + '>')
 
                 summs = Summarization.generateSummary(text_b)
                 removeIDs = []
-                for i, ID in enumerate(batchIDs):
-                    prediction_b[ID] = summs[i]
+                for ii, ID in enumerate(batchIDs):
+                    prediction_b[ID] = summs[ii]
                     if sents[ID] == []:
-                        res.append({'id': ID, 'summary': summs[i]})
+                        res[ID] = summs[ii]
                         removeIDs.append(ID)
-                
+
                 batchIDs = [i for i in batchIDs if i not in removeIDs]
         return res
 
 
 class Classification:
     @staticmethod
-    def predict_cls(text):
+    def predict_cls(texts):
         def preprocess_text(text):
             # remove redundant spaces
             text = re.sub(r'\s+', ' ', text)
             text = text.strip()
             return text
 
-        text = preprocess_text(text)
+        processed_text = [preprocess_text(text) for text in texts]
         # Perform detection
         max_target_length = 256
-        inputs = tokenizer_classification(text, return_tensors="pt")
+        inputs = tokenizer_classification(processed_text, max_length=1024, truncation=True, padding=True ,return_tensors="pt")
+        
         input_ids = inputs.input_ids.to(device)
         attention_mask = inputs.attention_mask.to(device)
-    
+
         # model predict 4
         output_cls = model_classification.generate(
             input_ids=input_ids,
             max_length=max_target_length,
             attention_mask=attention_mask,
         )
+        predicted_cls = [tokenizer_classification.decode(out, skip_special_tokens=True) for out in output_cls]
         
-        # model predict subtopic
-        output_cls_subtopic = model_classification_subtopic.generate(
-            input_ids=input_ids,
-            max_length=max_target_length,
-            attention_mask=attention_mask,
-        )
-        predicted_cls = tokenizer_classification.decode(output_cls[0], skip_special_tokens=True)
-        predicted_subtopic = tokenizer_classification.decode(output_cls_subtopic[0], skip_special_tokens=True)
-        return predicted_cls, predicted_subtopic
+        tnmt_indices = [index for index, value in enumerate(predicted_cls) if value != "Không;Không;Không;Không"]
+        
+        tnmt_indices = torch.tensor(tnmt_indices)
+        try:
+            selected_input_ids_tensor = torch.index_select(input_ids, 0, tnmt_indices)
+            selected_attention_mask_tensor = torch.index_select(attention_mask, 0, tnmt_indices)
+
+            # model predict subtopic
+            output_cls_subtopic = model_classification_subtopic.generate(
+                input_ids=selected_input_ids_tensor,
+                max_length=max_target_length,
+                attention_mask=selected_attention_mask_tensor,
+            )
+
+            predicted_subtopic = [tokenizer_classification.decode(out, skip_special_tokens=True) for out in output_cls_subtopic]
+
+            predicted_subtopic_final = ["Không"] * len(texts)
+
+            for i, idx in enumerate(tnmt_indices):
+                predicted_subtopic_final[idx] = predicted_subtopic[i]
+
+            return predicted_cls, predicted_subtopic_final
+
+        except Exception as e:
+            predicted_subtopic_final = ["Không"] * len(texts)
+            return predicted_cls, predicted_subtopic_final
 
     @staticmethod
     def classify_article(data):
-        text = data['title'] + '. ' + data['anchor'] + '. ' + data['content']
-        _, province_list = Classification.check_VietNam_provinces(text)
+        '''
+        Input:
+            data: a list of objects containing id, title, anchor, content.
+        Ouptut:
+            results: a list of objects containing id, title, summary, and other cls information.
+        '''
+        results = []
+        batch_size = 4
+        num_batches = (len(data) + batch_size - 1) // batch_size
         
-        try:
-            prd_data, prd_subtopic = Classification.predict_cls(text)
-            prd_topic, prd_sentiment, prd_subtopic_model4, prd_aspect = prd_data.split(';')
-            prd_aspect_law = Classification.check_aspect_law(text)
-            prd_subtopic = ast.literal_eval(prd_subtopic)
+        # for each batch
+        for i in range(num_batches):
+            start_idx = i * batch_size
+            end_idx = min((i + 1) * batch_size, len(data))
+            batch = data[start_idx:end_idx]
+            batch_data = []
+            for text in batch:
+                batch_data.append(text['title'] + '. ' + text['anchor'] + '. ' + text['content'])
             
-            if prd_topic == "Không":
-                result = {
-                    "id"        : data['id'],                          
-                    "topic"     : "Không",                           
-                    "sub_topic" : [],                
-                    "aspect"    : [],         
-                    "sentiment" : "Không",                      
-                    "province"  : [],
-                }
-                return result
+            prd_data_batch, prd_subtopic_batch = Classification.predict_cls(batch_data)
+            
+            # For each object individual
+            for j in range(len(batch_data)):
+                # Get the object individual
+                object_data = batch[j]
+                text_data = batch_data[j]
+                prd_data, prd_subtopic = prd_data_batch[j], prd_subtopic_batch[j]
+                # Process for each object
+                try:
+                    prd_topic, prd_sentiment, prd_subtopic_model4, prd_aspect = prd_data.split(';')
+                except:
+                    result = {
+                        "id"        : object_data['id'],                          
+                        "topic"     : "Exceptions",                           
+                        "sub_topic" : [],                
+                        "aspect"    : [],         
+                        "sentiment" : "Không",                      
+                        "province"  : [],
+                    }
+                    results.append(result)
                 
-            elif prd_topic != "Không":
-                
-                prd_aspect = [prd_aspect]
-                if prd_aspect_law != False :
-                    prd_aspect.append(prd_aspect_law)
-                
-                if prd_subtopic_model4.lower() not in map(str.lower, prd_subtopic):
-                    prd_subtopic.append(prd_subtopic_model4)
-                   
-                
-            result = {
-                "id"        : data['id'],                          
-                "topic"     : prd_topic,                           
-                "sub_topic" : prd_subtopic,                
-                "aspect"    : prd_aspect,            
-                "sentiment" : prd_sentiment,                      
-                "province"  : province_list,
-            }
-            return result
-        except:
-            result = {
-                "id"        : data['id'],                          
-                "topic"     : "Exceptions",                           
-                "sub_topic" : [],                
-                "aspect"    : [],         
-                "sentiment" : "Không",                      
-                "province"  : [],
-            }
-            return result
+                if prd_topic == "Không":
+                    result = {
+                        "id"        : object_data['id'],                          
+                        "topic"     : "Không",                           
+                        "sub_topic" : [],                
+                        "aspect"    : [],         
+                        "sentiment" : "Không",                      
+                        "province"  : [],
+                    }
+                    results.append(result)
+                    
+                elif prd_topic != "Không":
+                    # Provinces
+                    is_in_vietnam, province_list = Classification.check_VietNam_provinces(text_data)
+                    
+                    # Aspect Law Change
+                    prd_aspect_law = Classification.check_aspect_law(text_data)
+                    prd_aspect = [prd_aspect]
+                    if prd_aspect_law != False :
+                        prd_aspect.append(prd_aspect_law)
+                    
+                    # Join 2 model subtopic predictions
+                    prd_subtopic = ast.literal_eval(prd_subtopic)
+                    if prd_subtopic_model4.lower() not in map(str.lower, prd_subtopic):
+                        prd_subtopic.append(prd_subtopic_model4)
+      
+                    result = {
+                        "id": object_data['id'],
+                        "topic": prd_topic,
+                        "sub_topic": prd_subtopic,
+                        "aspect": prd_aspect,
+                        "sentiment": prd_sentiment,
+                        "province": province_list,
+                    }
+                    results.append(result)
+                    
+        return results
 
     @staticmethod
     def check_VietNam_provinces(text):

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from flask import request, Response, Flask, render_template
 from waitress import serve
 import json
@@ -68,32 +69,39 @@ def sum_cls_api():
     array_data = request.json
     
     print("Classifying and Summarizing ...")
-    
-    # Summarization
-    array_summary = Summarization.getDocSummary(array_data, sentnum=5)
+    print("Phase 1: Classifying ...")
     
     # Classification
-    array_cls = []
+    array_cls = Classification.classify_article(array_data)
     
-    for data in array_data:
-        cls_data = Classification.classify_article(data)
-        array_cls.append(cls_data)
-    
-    # merge the results
+    print("Phase 2: Summarizing ...")
+    # Process label 0 object 
+    array_data_summ = []
+
+    for idx, data in enumerate(array_data):
+        # Checking if the 'topic' index exists in array_cls
+        if idx < len(array_cls):
+            # Assuming you want to check if the 'topic' value is Có
+            if array_cls[idx]["topic"] == "Có" and array_cls[idx]["id"] == data["id"]:
+                array_data_summ.append(data)
+
+    # Summarization
+    object_summary = Summarization.getDocSummary(array_data_summ, sentnum=3)
+    # merge the Summarization and Classification results
     array_results = []
     for cls_object in array_cls:
         cls_id = cls_object['id']
-        result = next((result for result in array_summary if result['id'] == cls_id), None)
-        if result:
-            array_results.append({
-                "id"        : cls_id,
-                "summary"   : result['summary'],
-                "topic"     : cls_object["topic"],                           
-                "sub_topic" : cls_object["sub_topic"],                
-                "aspect"    : cls_object["aspect"],            
-                "sentiment" : cls_object["sentiment"],                      
-                "province"  : cls_object["province"],
-            })
+        array_results.append({
+            "id"        : cls_id,
+            "summary"   : object_summary[cls_id] ,
+            "topic"     : cls_object["topic"],
+            "sub_topic" : cls_object["sub_topic"],
+            "aspect"    : cls_object["aspect"],
+            "sentiment" : cls_object["sentiment"],
+            "province"  : cls_object["province"],
+        })
+        
+        
             
     print("Classification and Summarization process has finished")
     return Response(json.dumps(array_results), mimetype='application/json')
