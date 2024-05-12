@@ -8,11 +8,19 @@ from sp_func import setup, Classification, Summarization
 
 app = Flask(__name__)
 
-
+# TODO: render 1 html file to visualize the request and response
 
 @app.route("/")
 def root():
-    return Response(json.dumps({"Application": "TNMT api service"}), mimetype='application/json')
+    """
+    Site main page handler function.
+    :return: Content of index.html file
+    """
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    index_html_path = os.path.join(current_dir, "index.html")
+    with open(index_html_path, encoding="utf-8") as file:
+        html_content = file.read()
+    return html_content
 
 
 @app.route("/classify", methods=["POST"])

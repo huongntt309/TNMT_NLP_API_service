@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TNMT API service</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f3f3f3;
+            /* Added background color to the body */
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px;
+        }
+
+        .half-container {
+            width: 45%;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            /* Added background color to the half-container */
+        }
+
+        textarea {
+            width: 95%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #predictButton {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #predictButton:hover {
+            background-color: #45a049;
+        }
+
+        #clearButton {
+            background-color: #afabab;
+            color: black;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #clearButton:hover {
+            opacity: 0.4;
+        }
+
+        #resultContainer {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        #resultContainer h2 {
+            margin-bottom: 10px;
+        }
+
+        #resultContainer p {
+            margin-bottom: 5px;
+        }
+
+        .resultLine {
+            color: #096525;
+            margin-top: 5px;
+        }
+
+        /* Style the navigation bar */
+        .navbar {
+            overflow: hidden;
+            background-color: green;
+        }
+
+        /* Style the links inside the navigation bar */
+        .navbar a {
+            float: left;
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+        }
+
+        /* Change the color of links on hover */
+        .navbar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+            border: 1px solid #ddd;
+        }
+
+        .styled-table th,
+        .styled-table td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .styled-table th {
+            background-color: #f2f2f2;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .styled-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+
+</head>
+
+<body>
+    <!-- Navigation bar -->
+    <div class="navbar">
+        <a href="/">Summarize and Classify</a>
+        <!-- Add more links as needed -->
+    </div>
+    <h1 style="text-align: center">Summarization and Classification</h1>
+    <h1 style="text-align: center">Natural resources and Environment Article</h1>
+    <div class="container">
+
+        <div class="half-container" id="inputContainer">
+            <label for="idInput">Id:</label><br>
+            <textarea id="idInput" rows="1" cols="50"></textarea><br><br>
+
+            <label for="titleInput">Title:</label><br>
+            <textarea id="titleInput" rows="1" cols="50"></textarea><br><br>
+
+            <label for="anchorInput">Anchor:</label><br>
+            <textarea id="anchorInput" rows="2" cols="50"></textarea><br><br>
+
+            <label for="contentInput">Content:</label><br>
+            <textarea id="contentInput" rows="8" cols="50"></textarea><br><br>
+            <p>If you do not fill all the text areas, it will be a sample data that we prodived to use the API</p>
+            <button id="predictButton">Classify</button>
+            <button id="clearButton">Clear</button>
+        </div>
+        <div class="half-container" id="resultContainer">
+            <table class="styled-table">
+                <tbody>
+                    <tr>
+                        <th>Id</th>
+                        <td>
+                            <p class="resultLine" id="rs_id"></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Topic</th>
+                        <td>
+                            <p class="resultLine" id="rs_topic"></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Sub Topic</th>
+                        <td>
+                            <p class="resultLine" id="rs_sub_topic"></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Aspect</th>
+                        <td>
+                            <p class="resultLine" id="rs_aspect"></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Sentiment</th>
+                        <td>
+                            <p class="resultLine" id="rs_sentiment"></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Provinces</th>
+                        <td>
+                            <p class="resultLine" id="rs_province"></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Summary</th>
+                        <td>
+                            <p class="resultLine" id="rs_summary"></p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div id="loadingIndicator" style="display: none;">Loading...</div>
+        </div>
+
+    </div>
+
+
+    <script>
+        const predictButton = document.getElementById("predictButton");
+
+        const idInput = document.getElementById("idInput");
+        const titleInput = document.getElementById("titleInput");
+        const anchorInput = document.getElementById("anchorInput");
+        const contentInput = document.getElementById("contentInput");
+
+
+        const rs_id = document.getElementById("rs_id");
+        const rs_summary = document.getElementById("rs_summary");
+        const rs_topic = document.getElementById("rs_topic");
+        const rs_sub_topic = document.getElementById("rs_sub_topic");
+        const rs_aspect = document.getElementById("rs_aspect");
+        const rs_sentiment = document.getElementById("rs_sentiment");
+        const rs_province = document.getElementById("rs_province");
+
+
+        const summarization = document.getElementById("summarization");
+        const clearButton = document.getElementById("clearButton");
+
+        predictButton.addEventListener("click", async () => {
+            clearOutput();
+
+            const id_input = idInput.value.trim();
+            const title_input = titleInput.value.trim();
+            const anchor_input = anchorInput.value.trim();
+            const content_input = contentInput.value.trim();
+
+            const data_input = [
+                {
+                    "id": id_input,
+                    "title": title_input,
+                    "anchor": anchor_input,
+                    "content": content_input,
+                }
+            ];
+
+            const data_sample = [{
+                "id": "UET-467",
+                "title": "Hưởng ứng Ngày Quốc tế Đa dạng sinh học năm 2024",
+                "anchor": "Để hưởng ứng Ngày Quốc tế Đa dạng sinh học năm 2024, Bộ Tài nguyên và Môi trường đề nghị các Bộ, ngành, địa phương tăng cường truyền thông, giáo dục, nâng cao nhận thức của người dân.",
+                "content": "Ngày Quốc tế Đa dạng sinh học diễn ra vào ngày 22/5 hàng năm. Năm 2024, Liên hợp quốc đã lựa chọn chủ đề cho Ngày Quốc tế Đa dạng sinh học là Be part of the Plan - Hãy là một phần của Kế hoạch đa dạng sinh học. Đây là thông điệp và là lời kêu gọi các bên liên quan cùng tham gia, đóng góp vào việc thực hiện Khung Đa dạng sinh học toàn cầu Côn Minh – Montreal (GBF), hướng tới ngăn chặn, giảm bớt sự suy giảm đa dạng sinh học trong thập kỷ Phục hồi hệ sinh thái. Thông điệp này cũng nhằm nâng cao nhận thức của các bên liên quan về Khung GBF tại Hội nghị các bên tham gia Công ước về Đa dạng sinh học (COP16), dự kiến diễn ra từ ngày 21/10 đến 1/11 tại Cali, Colombia. Thúc đẩy lối sống hài hoà với thiên nhiên. Để hưởng ứng Ngày Quốc tế Đa dạng sinh học năm 2024, Bộ Tài nguyên và Môi trường đề nghị các Bộ, ngành, địa phương tăng cường truyền thông, giáo dục, nâng cao nhận thức về đa dạng sinh học và các giá trị đa dạng sinh học trong chiến lược phát triển bền vững của quốc gia; lồng ghép nội dung bảo tồn đa dạng sinh học vào các chương trình giáo dục, đồng thời thúc đẩy lối sống hài hoà với thiên nhiên. Các cơ quan cần tiếp tục triển khai hiệu quả Chiến lược quốc gia về Đa dạng sinh học đến năm 2030, tầm nhìn 2050, đóng góp vào thực hiện các mục tiêu của Khung Đa dạng sinh học toàn cầu Côn Minh – Montreal (GBF) được thông qua tại Hội nghị COP15; phổ biến, hướng dẫn, thực hiện các quy hoạch, chương trình, kế hoạch, chỉ thị trong lĩnh vực bảo tồn thiên nhiên và đa dạng sinh học. Đồng thời, tăng cường các hoạt động khẩn cấp ngăn chặn tình trạng khai thác quá mức và buôn bán trái phép các loài động vật, thực vật hoang dã, bảo vệ và tôn trọng các phong tục tập quán bền vững của người dân địa phương sống tại các khu vực dễ bị tổn thương như các Khu bảo tồn, Vườn quốc gia và các khu vực được công nhận là Di sản thiên nhiên. Giảm thiểu sự xuất hiện và tác động của các loài ngoại lai xâm hại đối với đa dạng sinh học. Bộ Tài nguyên và Môi trường yêu cầu các đơn vị, địa phương có giải pháp ngăn chặn, giảm thiểu sự xuất hiện và tác động của các loài ngoại lai xâm hại đối với đa dạng sinh học thông qua các biện pháp kiểm soát, tăng cường quản lý con đường du nhập hoặc diệt trừ các loài ngoại lai xâm hại. Lâu dài, cần nghiên cứu và áp dụng các giải pháp giảm ô nhiễm và giảm thiểu tác động của biến đổi khí hậu đến đa dạng sinh học thông qua các giải pháp như giảm thiểu phát thải, ngăn chặn và giảm rác thải nhựa, quản lý chặt chẽ thuốc trừ sâu và hoá chất dùng trong sản xuất nông lâm ngư nghiệp, quản lý dịch bệnh, thâm canh bền vững… Đồng thời, lồng ghép bảo tồn đa dạng sinh học vào các chính sách, chiến lược, quy hoạch, kế hoạch của các Bộ, ngành, địa phương để đảm bảo sự công bằng, toàn diện và đồng bộ trong quá trình ra quyết định có liên quan đến bảo tồn đa dạng sinh học. Bộ Tài nguyên và Môi trường cho rằng cần tiếp tục đẩy mạnh xây dựng cơ sở dữ liệu và tăng cường năng lực về điều tra, kiểm kê, quan trắc, giám sát các thông tin, dữ liệu về đa dạng sinh học. ",
+            }
+            ];
+
+            let using_data_sample = false
+            let data = data_input
+            if (!id_input || !title_input || !anchor_input || !content_input) {
+                alert("We will use the sample data");
+                data = data_sample;
+
+                anchorInput.textContent = data[0]['anchor'];
+                titleInput.textContent = data[0]['title'];
+                idInput.textContent = data[0]['id'];
+                contentInput.textContent = data[0]['content'];
+            }
+
+            // loading 
+            const loadingIndicator = document.getElementById("loadingIndicator");
+            loadingIndicator.style.display = "block";
+
+
+            const response = await fetch("/sum-cls", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+
+            loadingIndicator.style.display = "none";
+
+            result_object = result[0]
+
+            rs_id.textContent = result_object.id;
+            rs_summary.textContent = result_object.summary;
+            rs_topic.textContent = result_object.topic;
+            rs_sub_topic.textContent = result_object.sub_topic;
+            rs_aspect.textContent = result_object.aspect;
+            rs_sentiment.textContent = result_object.sentiment;
+            rs_province.textContent = result_object.province;
+        });
+
+        clearButton.addEventListener("click", () => {
+            clearInput()
+            clearOutput();
+        });
+
+        function clearOutput() {
+            rs_id.textContent = "";
+            rs_summary.textContent = "";
+            rs_topic.textContent = "";
+            rs_sub_topic.textContent = "";
+            rs_aspect.textContent = "";
+            rs_sentiment.textContent = "";
+            rs_province.textContent = "";
+        }
+
+        function clearInput() {
+            anchorInput.textContent = "";
+            titleInput.textContent = "";
+            idInput.textContent = "";
+            contentInput.textContent = "";
+        }
+
+    </script>
+</body>
+
+</html>
