@@ -45,7 +45,7 @@ The API service can be configured through environment variables. You can customi
 ## Example
 Here is an example of how to use the API endpoints:
 ### API Endpoints
-0. `GET /`
+0. `GET /` - an endpoint to test the API with Website User Interface 
 1. `POST /classify`
 2. `POST /summarize`
 3. `POST /sum-cls`

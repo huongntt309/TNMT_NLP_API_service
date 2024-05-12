@@ -8,8 +8,6 @@ from sp_func import setup, Classification, Summarization
 
 app = Flask(__name__)
 
-# TODO: render 1 html file to visualize the request and response
-
 @app.route("/")
 def root():
     """

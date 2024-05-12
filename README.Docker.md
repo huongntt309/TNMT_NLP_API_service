@@ -16,9 +16,7 @@
     Host port <your_expected_port>
 
 ## Result 
-{
-  "Application": "TNMT api service"
-}
+A GUI web to test API server with a sample data.
 
 
 # How to build an image 
