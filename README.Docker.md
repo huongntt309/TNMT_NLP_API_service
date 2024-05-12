@@ -1,9 +1,9 @@
 # How to run Docker container
 ## Pull image and run in CLI mode
 ### pull 
-`docker pull huongntt/tnmt-api-server`
+`docker pull huongntt/tnmt-api-service-server:v2-ui`
 ### run
-`docker run -p 5000:<your_expected_port> huongntt/tnmt-api-server`
+`docker run -p 5000:<your_expected_port> huongntt/tnmt-api-service-server`
 
 ## Pull image and run in Docker Desktop 
 ### pull 
