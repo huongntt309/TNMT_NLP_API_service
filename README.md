@@ -8,6 +8,7 @@ To use the TNMT API Service, you have two options:
 
 ### Option 1: Docker
 1. Ensure you have Docker installed on your system.
+    Or download at https://www.docker.com/products/docker-desktop/
 2. Pull the TNMT API Docker image from Docker Hub:
     ```
     docker pull huongntt/tnmt-api-service-server:v1
