@@ -3,10 +3,9 @@
 ## Overview
 The TNMT API Service is designed to provide various functionalities for classifying and summarizing Natural Resources and Environment news articles. It offers endpoints for classifying articles, summarizing content, and combining both classification and summarization.
 
-## Installation and Usage
-To use the TNMT API Service, you have two options:
+## Installation and Setup
+To run the TNMT API Service, you should using Docker
 
-### Option 1: Docker
 1. Ensure you have Docker installed on your system.
     Or download at https://www.docker.com/products/docker-desktop/
 2. Pull the TNMT API Docker image from Docker Hub:
@@ -19,25 +18,6 @@ To use the TNMT API Service, you have two options:
     ```
 4. The API service will be accessible at `http://localhost:5000`.
 
-### Option 2: Manual Setup
-1. Install Python (version 3.11) and pip.
-2. Clone this repository:
-    ```
-    git clone https://github.com/huongntt309/TNMT_NLP_API_service.git
-    ```
-3. Navigate to the project directory:
-    ```
-    cd TNMT_NLP_API_service
-    ```
-4. Install the required dependencies:
-    ```
-    pip install -r requirements.txt
-    ```
-5. Start the API service:
-    ```
-    python app/app.py
-    ```
-6. The API service will be accessible at `http://localhost:5000`.
 
 ## Configuration
 The API service can be configured through environment variables. You can customize settings such as port number, logging level, and model paths by setting the corresponding environment variables.
@@ -93,8 +73,12 @@ Here is an example of how to use the API endpoints:
 ]
 ```
 
-### API Testing
-We create a json test file in **app/bow_folder/21-test-cases.json**, you can use this data at Request Body, then test this at `http://localhost:5000/sum-cls`.
+## API Testing
+### Option 1: UI Web Testing
+To access the UI web interface, navigate to http://localhost:5000/. Once there, your request to classify will be sent using a POST request to /sum-cls endpoint on the server.
+
+### Option 2: JSON Test File
+A JSON test file is available at app/bow_folder/21-test-cases.json. You can use the data from this file as the request body for testing purposes. Send this data to http://localhost:5000/sum-cls to perform the test.
 
 ## Technology used
 1. "VietAI/vit5-base": ViT5, Pre-trained Text-to-Text Transformer for Vietnamese Language Generation.
