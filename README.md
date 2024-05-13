@@ -73,12 +73,14 @@ Here is an example of how to use the API endpoints:
 ]
 ```
 
-## API Testing
-### Option 1: UI Web Testing
-To access the UI web interface, navigate to http://localhost:5000/. Once there, your request to classify will be sent using a POST request to /sum-cls endpoint on the server.
+## API Usage
+### Option 1: UI Web 
+To access the UI web interface, navigate to http://localhost:5000/. Once there, your request to classify will be sent using a POST request to **/sum-cls** endpoint on the server.
 
-### Option 2: JSON Test File
-A JSON test file is available at app/bow_folder/21-test-cases.json. You can use the data from this file as the request body for testing purposes. Send this data to http://localhost:5000/sum-cls to perform the test.
+## Option 2: Using Postman
+1. Create a **POST request** in Postman (or any other application with similar functionality).
+2. Set the request body to JSON data from **app/bow_folder/21-test-cases.json** (or any other JSON data you have).
+3. Send the **POST request** to **http://localhost:5000/sum-cls**.
 
 ## Technology used
 1. "VietAI/vit5-base": ViT5, Pre-trained Text-to-Text Transformer for Vietnamese Language Generation.
