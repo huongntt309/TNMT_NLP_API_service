@@ -250,16 +250,18 @@ class Classification:
                 # Process for each object
                 try:
                     prd_topic, prd_sentiment, prd_subtopic_model4, prd_aspect = prd_data.split(';')
+                    prd_subtopic = ast.literal_eval(prd_subtopic)
                 except:
                     result = {
                         "id"        : object_data['id'],                          
-                        "topic"     : "Exceptions",                           
+                        "topic"     : "Không - Exceptions",                           
                         "sub_topic" : [],                
                         "aspect"    : [],         
                         "sentiment" : "Không",                      
                         "province"  : [],
                     }
                     results.append(result)
+                    continue
                 
                 if prd_topic == "Không":
                     result = {
@@ -283,7 +285,7 @@ class Classification:
                         prd_aspect.append(prd_aspect_law)
                     
                     # Join 2 model subtopic predictions
-                    prd_subtopic = ast.literal_eval(prd_subtopic)
+                    
                     if prd_subtopic_model4.lower() not in map(str.lower, prd_subtopic):
                         prd_subtopic.append(prd_subtopic_model4)
       
