@@ -10,11 +10,11 @@ To run the TNMT API Service, you should using Docker
     Or download at https://www.docker.com/products/docker-desktop/
 2. Pull the TNMT API Docker image from Docker Hub:
     ```
-    docker pull huongntt/tnmt-api-service-server:v2-ui
+    docker pull huongntt/huongntt/tnmt-nlp-microservice:latest
     ```
 3. Run the Docker container:
     ```
-    docker run -p 5000:5000 huongntt/tnmt-api-service-server:v2-ui
+    docker run -p 5000:5000 huongntt/huongntt/tnmt-nlp-microservice:latest
     ```
 4. The API service will be accessible at `http://localhost:5000`.
 

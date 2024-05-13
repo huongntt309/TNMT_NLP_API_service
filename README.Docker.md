@@ -1,9 +1,9 @@
 # How to run Docker container
 ## Pull image and run in CLI mode
 ### pull 
-`docker pull huongntt/tnmt-api-service-server:v2-ui`
+`docker pull huongntt/huongntt/tnmt-nlp-microservice:latest`
 ### run
-`docker run -p 5000:<your_expected_port> huongntt/tnmt-api-service-server`
+`docker run -p 5000:<your_expected_port> huongntt/huongntt/tnmt-nlp-microservice`
 
 ## Pull image and run in Docker Desktop 
 ### pull 

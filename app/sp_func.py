@@ -42,7 +42,7 @@ def setup_device():
 # set up functions
 def setup():
     # Load 2 model_predictions + 1 model summarization
-    transformer_cache()
+    # transformer_cache()
     setup_device()
     
     global model_classification

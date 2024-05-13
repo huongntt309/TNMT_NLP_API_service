@@ -1,4 +1,4 @@
-# TNMT API Service
+# TNMT API MicroService
 
 ## API Endpoints
 0. `GET /`
@@ -51,13 +51,25 @@
 
 ## API Output Exceptions
 ```bash
-{
-    "id"        : "3",
-    "summary"   : "...",
-    "topic"     : "Exceptions",
-    "sub_topic" : [],
-    "aspect"    : [],
-    "sentiment" : "Không",
-    "province"  : []
-}
+[
+    {
+        "id"        : "1",
+        "title"     : "Tiêu đề",
+        "anchor"    : "",
+        "content"   : ""
+    }
+]
+```
+```bash
+[
+    {
+        "id"        : "1",
+        "summary"   : "...",
+        "topic"     : "Exceptions",
+        "sub_topic" : [],
+        "aspect"    : [],
+        "sentiment" : "Không",
+        "province"  : []
+    }
+]
 ```
