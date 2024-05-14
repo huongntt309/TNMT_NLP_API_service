@@ -1,9 +1,9 @@
 # How to run Docker container
 ## Pull image and run in CLI mode
 ### pull 
-`docker pull huongntt/huongntt/tnmt-nlp-microservice:latest`
+`docker pull huongntt/tnmt-nlp-microservice:latest`
 ### run
-`docker run -p 5000:<your_expected_port> huongntt/huongntt/tnmt-nlp-microservice`
+`docker run -p 5000:<your_expected_port> huongntt/tnmt-nlp-microservice`
 
 ## Pull image and run in Docker Desktop 
 ### pull 
@@ -46,7 +46,7 @@ docs for more detail on building and pushing.
 # Container architecture ?? 
 ## OS
 `docker exec <container_id> uname -a`
-Linux f87305c6d412 5.15.146.1-microsoft-standard-WSL2 #1 SMP Thu Jan 11 04:09:03 UTC 2024 x86_64 GNU/Linux
+Linux, x86_64 GNU/Linux
 
 ## OS
 `docker exec <container_id> env`
