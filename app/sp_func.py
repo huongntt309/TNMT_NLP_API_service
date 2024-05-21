@@ -16,23 +16,7 @@ model_summarization = None
 tokenizer_classification = None
 tokenizer_summarization = None
 device = None
-def transformer_cache():
-    if platform.system() == "Windows":
-        print("Windows detected. Assigning cache directory to Transformers in AppData\Local.")
-        transformers_cache_directory = os.path.join(os.getenv('LOCALAPPDATA'), 'transformers_cache')
-        if not os.path.exists(transformers_cache_directory):
-            try:
-                os.mkdir(transformers_cache_directory)
-                print(f"First launch. Directory '{transformers_cache_directory}' created successfully.")
-            except OSError as e:
-                print(f"Error creating directory '{transformers_cache_directory}': {e}")
-        else:
-            print(f"Directory '{transformers_cache_directory}' already exists.")
-        os.environ['TRANSFORMERS_CACHE'] = transformers_cache_directory
-        print("Environment variable assigned.")
-        del transformers_cache_directory
-    else:
-        print("Windows not detected. Assignment of Transformers cache directory not necessary.")
+
         
 def setup_device():
     global device
@@ -126,8 +110,7 @@ class Summarization:
             ]
         OUTPUT:
             {
-                id: 
-                summary:
+                id: summary
             }
         '''
 
@@ -246,11 +229,10 @@ class Classification:
                 # Get the object individual
                 object_data = batch[j]
                 text_data = batch_data[j]
-                prd_data, prd_subtopic = prd_data_batch[j], prd_subtopic_batch[j]
+                prd_data_model4, prd_subtopic_model1 = prd_data_batch[j], prd_subtopic_batch[j]
                 # Process for each object
                 try:
-                    prd_topic, prd_sentiment, prd_subtopic_model4, prd_aspect = prd_data.split(';')
-                    prd_subtopic = ast.literal_eval(prd_subtopic)
+                    prd_topic, prd_sentiment, prd_subtopic_model4, prd_aspect = prd_data_model4.split(';')
                 except:
                     result = {
                         "id"        : object_data['id'],                          
@@ -262,7 +244,7 @@ class Classification:
                     }
                     results.append(result)
                     continue
-                
+                 
                 if prd_topic == "Không":
                     result = {
                         "id"        : object_data['id'],                          
@@ -285,6 +267,7 @@ class Classification:
                         prd_aspect.append(prd_aspect_law)
                     
                     # Join 2 model subtopic predictions
+                    prd_subtopic = ast.literal_eval(prd_subtopic_model1)
                     
                     if prd_subtopic_model4.lower() not in map(str.lower, prd_subtopic):
                         prd_subtopic.append(prd_subtopic_model4)

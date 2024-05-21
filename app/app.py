@@ -4,6 +4,7 @@ from waitress import serve
 import json
 import os
 from sp_func import setup, Classification, Summarization
+from validate_input import check_duplicate_ids
 
 
 app = Flask(__name__)
@@ -73,71 +74,80 @@ def sum_cls_api():
     """
     # Load the corpus from the request
     array_data = request.json
+    
+    print("Validating Input ...")
+    
+    msg_check_ids = check_duplicate_ids(array_data)
+    if msg_check_ids['status'] == "error":
+        print("Validating Input process has failed")
+        return Response(json.dumps(msg_check_ids), mimetype='application/json')
+        
+        
+    print("Classifying and Summarizing ...")
+    print("Phase 1: Classifying ...")
+    
+   
     valid_data = []
     valid_indices = []
 
     # List to store final results
     array_results = []
 
-    # Iterate over the input data to separate valid and invalid items
+    # Validation input
     for index, item in enumerate(array_data):
-        if "id" in item and "title" in item:
+        if not item:
+            array_results.append({
+                "id": "",
+                "summary": "",
+                "topic": "empty item",
+                "sub_topic": [],
+                "aspect": [],
+                "sentiment": "",
+                "province": []
+            })
+        elif "id" in item and "title" in item:
             # Ensure 'anchor' and 'content' keys exist
-            if "anchor" not in item:
-                item["anchor"] = ""
-            if "content" not in item:
-                item["content"] = ""
-            valid_data.append(item)
-            valid_indices.append(index)
-        elif "id" not in item and "title" not in item:
-            # Append placeholder for invalid data
-            array_results.append({
-                "id": "",
-                "summary": "",
-                "topic": "no id and no title",
-                "sub_topic": [],
-                "aspect": [],
-                "sentiment": "",
-                "province": []
-            })
-        elif "id" not in item and "title" in item:
-            array_results.append({
-                "id": "",
-                "summary": "",
-                "topic": "no id",
-                "sub_topic": [],
-                "aspect": [],
-                "sentiment": "",
-                "province": []
-            })
+            item.setdefault("anchor", "")
+            item.setdefault("content", "")
+            if item["anchor"] == "" and item["content"] == "":
+                array_results.append({
+                    "id": item["id"],
+                    "summary": "",
+                    "topic": "empty anchor and content",
+                    "sub_topic": [],
+                    "aspect": [],
+                    "sentiment": "",
+                    "province": []
+                })
+            else:
+                valid_data.append(item)
+                valid_indices.append(index)
         else:
-            array_results.append({
-                "id": item['id'],
+            result = {
+                "id": item.get("id", ""),
                 "summary": "",
-                "topic": "no title",
+                "topic": "no id and no title" if "id" not in item and "title" not in item else ("no id" if "id" not in item else "no title"),
                 "sub_topic": [],
                 "aspect": [],
                 "sentiment": "",
                 "province": []
-            })
+            }
+            array_results.append(result)
 
-    print("Classifying and Summarizing ...")
-    print("Phase 1: Classifying ...")
-    
-    # Classification
+    # Model Classification
     array_cls = []
     if valid_data:
         array_cls = Classification.classify_article(valid_data)
+        
+        
     print("Phase 2: Summarizing ...")
     # Process label 0 object 
     array_data_summ = []
 
     for idx, data in enumerate(valid_data):
-        # Checking if the 'topic' index exists in array_cls
-        if idx < len(valid_data):
-            # Assuming you want to check if the 'topic' value is Có
-            if "id" in data and array_cls[idx]["topic"] == "Có" and array_cls[idx]["id"] == data["id"]:
-                array_data_summ.append(data)
+        # Assuming you want to check if the 'topic' value is Có
+        if "id" in data and array_cls[idx]["topic"] == "Có" and array_cls[idx]["id"] == data["id"]:
+            array_data_summ.append(data)
 
     # Summarization
     object_summary = Summarization.getDocSummary(array_data_summ, sentnum=3)
