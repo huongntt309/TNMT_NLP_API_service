@@ -1,13 +1,26 @@
-# syntax=docker/dockerfile:1
+# Use a CUDA base image with the specified CUDA version and Ubuntu version
+FROM nvidia/cuda:12.4-runtime-ubuntu20.04 as base
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
-
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
-
+# Set the Python version as a build argument
 ARG PYTHON_VERSION=3.11
-FROM python:${PYTHON_VERSION}-slim as base
+
+# Install necessary packages and Python
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    python${PYTHON_VERSION} \
+    python3-pip \
+    python3-setuptools \
+    python3-dev \
+    wget \
+    curl \
+    git && \
+    ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 && \
+    ln -s /usr/bin/pip3 /usr/bin/pip && \
+    rm -rf /var/lib/apt/lists/*
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -34,9 +47,12 @@ RUN adduser \
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
 # into this layer.
-RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements.txt,target=requirements.txt \
-    python -m pip install -r requirements.txt
+# Install Python dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --upgrade pip && \
+    pip install -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
+
 
 # Switch to the non-privileged user to run the application.
 USER appuser

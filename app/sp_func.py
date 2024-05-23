@@ -17,12 +17,16 @@ tokenizer_classification = None
 tokenizer_summarization = None
 device = None
 
-        
 def setup_device():
     global device
-    device = torch.device('cpu')
-    print("Setup device: CPU")
-    
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+        cuda_version = torch.version.cuda
+        print(f"Setup device: CUDA (version {cuda_version})")
+    else:
+        device = torch.device('cpu')
+        print("Setup device: CPU")
+
 # set up functions
 def setup():
     # Load 2 model_predictions + 1 model summarization
