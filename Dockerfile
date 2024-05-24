@@ -1,16 +1,17 @@
 # Use a CUDA base image with the specified CUDA version and Ubuntu version
-FROM nvidia/cuda:12.4-runtime-ubuntu20.04 as base
+FROM nvidia/cuda:11.7.1-devel-ubuntu18.04 as base
 
 # Set the Python version as a build argument
 ARG PYTHON_VERSION=3.11
 
 # Install necessary packages and Python
+# Install necessary packages and Python
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
-    apt-get install -y --no-install-recommends \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     python${PYTHON_VERSION} \
     python3-pip \
     python3-setuptools \
@@ -51,6 +52,7 @@ RUN adduser \
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade pip && \
     pip install -r /tmp/requirements.txt && \
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 && \
     rm /tmp/requirements.txt
 
 
