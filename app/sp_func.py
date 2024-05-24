@@ -269,6 +269,10 @@ class Classification:
                     # Join 2 model subtopic predictions
                     prd_subtopic = ast.literal_eval(prd_subtopic_model1)
                     
+                    # Rename the same subtopic (of 2 model viT5)
+                    if prd_subtopic_model4 == "chung":
+                        prd_subtopic_model4 = "Thông tin chung"
+                        
                     if prd_subtopic_model4.lower() not in map(str.lower, prd_subtopic):
                         prd_subtopic.append(prd_subtopic_model4)
       
