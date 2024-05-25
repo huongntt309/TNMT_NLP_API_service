@@ -66,7 +66,7 @@ def setup():
 
 
 class Summarization:
-    dict_map_path_json = 'app/bow_folder/dict_map.json'
+    dict_map_path_json = 'bow_folder/dict_map.json'
     with open(dict_map_path_json, 'r', encoding='utf-8') as f:
         dict_map = json.load(f)
 
@@ -192,8 +192,7 @@ class Classification:
                 attention_mask=selected_attention_mask_tensor.to(device),
             )
 
-            predicted_subtopic = [tokenizer_classification.decode(out, skip_special_tokens=True) for out in
-                                  output_cls_subtopic]
+            predicted_subtopic = [tokenizer_classification.decode(out, skip_special_tokens=True) for out in output_cls_subtopic]
 
             predicted_subtopic_final = ["Không"] * len(texts)
 
@@ -294,7 +293,7 @@ class Classification:
 
     @staticmethod
     def check_VietNam_provinces(text):
-        province_viet_nam_file = "app/bow_folder/province_viet_nam.txt"
+        province_viet_nam_file = "bow_folder/province_viet_nam.txt"
 
         with open(province_viet_nam_file, 'r', encoding='utf-8') as file:
             provinces = [line.replace("\n", "") for line in file.readlines()]
@@ -318,7 +317,7 @@ class Classification:
     @staticmethod
     def check_aspect_law(text):
         # open file
-        law_file = "app/bow_folder/aspect_law.txt"
+        law_file = "bow_folder/aspect_law.txt"
 
         with open(law_file, 'r', encoding='utf-8') as file:
             law_names = [line.strip() for line in file.readlines()]
