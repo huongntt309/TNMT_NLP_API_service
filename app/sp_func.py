@@ -270,11 +270,13 @@ class Classification:
                     if prd_aspect_law != False :
                         prd_aspect.append(prd_aspect_law)
                     
-                    # Join 2 model subtopic predictions
-                    prd_subtopic = ast.literal_eval(prd_subtopic_model1)
-                    
-                    if prd_subtopic_model4.lower() not in map(str.lower, prd_subtopic):
-                        prd_subtopic.append(prd_subtopic_model4)
+                    if prd_subtopic_model1 != "Không":
+                        prd_subtopic = ast.literal_eval(prd_subtopic_model1)
+
+                        if prd_subtopic_model4.lower() not in map(str.lower, prd_subtopic):
+                            prd_subtopic.append(prd_subtopic_model4)
+                    else:
+                        prd_subtopic = prd_subtopic_model4
       
                     result = {
                         "id": object_data['id'],

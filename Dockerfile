@@ -1,17 +1,19 @@
 # Use a CUDA base image with the specified CUDA version and Ubuntu version
-FROM nvidia/cuda:11.7.1-devel-ubuntu18.04 as base
+FROM nvidia/cuda:11.7.1-devel-ubuntu20.04 as base
 
 # Set the Python version as a build argument
 ARG PYTHON_VERSION=3.11
 
-# Install necessary packages and Python
-# Install necessary packages and Python
+# Set DEBIAN_FRONTEND to noninteractive to avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install necessary packages
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends \
     software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends \
     python${PYTHON_VERSION} \
     python3-pip \
     python3-setuptools \
@@ -19,9 +21,14 @@ RUN apt-get update && \
     wget \
     curl \
     git && \
-    ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 && \
-    ln -s /usr/bin/pip3 /usr/bin/pip && \
     rm -rf /var/lib/apt/lists/*
+
+
+# Install Python dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN python3 -m pip install --upgrade pip && \
+    python3 -m pip install -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -44,18 +51,6 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
-# Leverage a bind mount to requirements.txt to avoid having to copy them into
-# into this layer.
-# Install Python dependencies
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --upgrade pip && \
-    pip install -r /tmp/requirements.txt && \
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 && \
-    rm /tmp/requirements.txt
-
-
 # Switch to the non-privileged user to run the application.
 USER appuser
 
@@ -66,4 +61,4 @@ COPY . .
 EXPOSE 5000
 
 # Run the application.
-CMD python -u app/app.py
+CMD python3 -u app/app.py
