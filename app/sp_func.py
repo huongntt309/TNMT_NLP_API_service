@@ -177,19 +177,19 @@ class Classification:
             attention_mask=attention_mask,
         )
         predicted_cls = [tokenizer_classification.decode(out, skip_special_tokens=True) for out in output_cls]
-        
+
         tnmt_indices = [index for index, value in enumerate(predicted_cls) if value != "Không;Không;Không;Không"]
         
-        tnmt_indices = torch.tensor(tnmt_indices)
+        tnmt_indices = torch.tensor(tnmt_indices).to(device)
         try:
             selected_input_ids_tensor = torch.index_select(input_ids, 0, tnmt_indices)
             selected_attention_mask_tensor = torch.index_select(attention_mask, 0, tnmt_indices)
 
             # model predict subtopic
             output_cls_subtopic = model_classification_subtopic.generate(
-                input_ids=selected_input_ids_tensor,
+                input_ids=selected_input_ids_tensor.to(device),
                 max_length=max_target_length,
-                attention_mask=selected_attention_mask_tensor,
+                attention_mask=selected_attention_mask_tensor.to(device),
             )
 
             predicted_subtopic = [tokenizer_classification.decode(out, skip_special_tokens=True) for out in output_cls_subtopic]
@@ -202,6 +202,7 @@ class Classification:
             return predicted_cls, predicted_subtopic_final
 
         except Exception as e:
+            print("exception")
             predicted_subtopic_final = ["Không"] * len(texts)
             return predicted_cls, predicted_subtopic_final
 
@@ -269,14 +270,11 @@ class Classification:
                     prd_aspect = [prd_aspect]
                     if prd_aspect_law != False :
                         prd_aspect.append(prd_aspect_law)
-                    
-                    if prd_subtopic_model1 != "Không":
-                        prd_subtopic = ast.literal_eval(prd_subtopic_model1)
 
-                        if prd_subtopic_model4.lower() not in map(str.lower, prd_subtopic):
-                            prd_subtopic.append(prd_subtopic_model4)
-                    else:
-                        prd_subtopic = prd_subtopic_model4
+                    prd_subtopic = ast.literal_eval(prd_subtopic_model1)
+
+                    if prd_subtopic_model4.lower() not in map(str.lower, prd_subtopic):
+                        prd_subtopic.append(prd_subtopic_model4)
       
                     result = {
                         "id": object_data['id'],
