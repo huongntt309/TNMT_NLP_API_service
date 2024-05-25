@@ -179,9 +179,9 @@ class Classification:
         predicted_cls = [tokenizer_classification.decode(out, skip_special_tokens=True) for out in output_cls]
 
         tnmt_indices = [index for index, value in enumerate(predicted_cls) if value != "Không;Không;Không;Không"]
-        
-        tnmt_indices = torch.tensor(tnmt_indices).to(device)
-        try:
+
+        if len(tnmt_indices) > 0:
+            tnmt_indices = torch.tensor(tnmt_indices).to(device)
             selected_input_ids_tensor = torch.index_select(input_ids, 0, tnmt_indices)
             selected_attention_mask_tensor = torch.index_select(attention_mask, 0, tnmt_indices)
 
@@ -192,7 +192,8 @@ class Classification:
                 attention_mask=selected_attention_mask_tensor.to(device),
             )
 
-            predicted_subtopic = [tokenizer_classification.decode(out, skip_special_tokens=True) for out in output_cls_subtopic]
+            predicted_subtopic = [tokenizer_classification.decode(out, skip_special_tokens=True) for out in
+                                  output_cls_subtopic]
 
             predicted_subtopic_final = ["Không"] * len(texts)
 
@@ -200,9 +201,7 @@ class Classification:
                 predicted_subtopic_final[idx] = predicted_subtopic[i]
 
             return predicted_cls, predicted_subtopic_final
-
-        except Exception as e:
-            print("exception")
+        else:
             predicted_subtopic_final = ["Không"] * len(texts)
             return predicted_cls, predicted_subtopic_final
 
