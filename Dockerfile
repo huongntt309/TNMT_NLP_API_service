@@ -1,8 +1,8 @@
 # Use a CUDA base image with the specified CUDA version and Ubuntu version
-FROM nvidia/cuda:11.7.1-devel-ubuntu20.04 as base
+FROM nvidia/cuda:11.4.3-runtime-ubuntu20.04 as base
 
 # Set the Python version as a build argument
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=3.9.19
 
 # Set DEBIAN_FRONTEND to noninteractive to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
@@ -26,8 +26,8 @@ RUN apt-get update && \
 
 # Install Python dependencies
 COPY requirements.txt /tmp/requirements.txt
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install -r /tmp/requirements.txt && \
+RUN python -m pip install --upgrade pip && \
+    python -m pip install -r /tmp/requirements.txt && \
     rm /tmp/requirements.txt
 
 # Prevents Python from writing pyc files.
@@ -61,4 +61,4 @@ COPY . .
 EXPOSE 5000
 
 # Run the application.
-CMD python3 -u app/app.py
+CMD python -u app/app.py

@@ -67,7 +67,9 @@ def setup():
 
 class Summarization:
     dict_map_path_json = 'bow_folder/dict_map.json'
-    with open(dict_map_path_json, 'r', encoding='utf-8') as f:
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    dict_map_path = os.path.join(script_dir, dict_map_path_json)
+    with open(dict_map_path, 'r', encoding='utf-8') as f:
         dict_map = json.load(f)
 
     @staticmethod
@@ -294,8 +296,10 @@ class Classification:
     @staticmethod
     def check_VietNam_provinces(text):
         province_viet_nam_file = "bow_folder/province_viet_nam.txt"
-
-        with open(province_viet_nam_file, 'r', encoding='utf-8') as file:
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        province_viet_nam_path = os.path.join(script_dir, province_viet_nam_file)
+        
+        with open(province_viet_nam_path, 'r', encoding='utf-8') as file:
             provinces = [line.replace("\n", "") for line in file.readlines()]
             
         is_in_vietnam = False
@@ -318,8 +322,11 @@ class Classification:
     def check_aspect_law(text):
         # open file
         law_file = "bow_folder/aspect_law.txt"
+        
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        law_file_path = os.path.join(script_dir, law_file)
 
-        with open(law_file, 'r', encoding='utf-8') as file:
+        with open(law_file_path, 'r', encoding='utf-8') as file:
             law_names = [line.strip() for line in file.readlines()]
 
         # count frequency of law keywords
