@@ -13,7 +13,7 @@ services:
       context: .
     ports:
       - 5000:5000
-    image: tnmt-nlp-microservice-test-gpu:latest
+    image: tnmt-nlp-microservice:latest
     deploy:
       resources:
         reservations:
