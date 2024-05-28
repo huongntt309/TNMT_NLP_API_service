@@ -280,19 +280,19 @@ class Classification:
 
                     if prd_subtopic_model4.lower() not in map(str.lower, prd_subtopic):
                         prd_subtopic.append(prd_subtopic_model4)
-                        # prd_subtopic = filter_output(prd_subtopic)
+                        prd_subtopic = filter_output(prd_subtopic)
                         
-                    # if (prd_subtopic == []):
-                    #     result = {
-                    #         "id": object_data['id'],
-                    #         "topic": "Không",
-                    #         "sub_topic": [],
-                    #         "aspect": [],
-                    #         "sentiment": "",
-                    #         "province": [],
-                    #     }
-                    #     results.append(result)
-                    #     continue
+                    if (prd_subtopic == []):
+                        result = {
+                            "id": object_data['id'],
+                            "topic": "Không",
+                            "sub_topic": [],
+                            "aspect": [],
+                            "sentiment": "",
+                            "province": [],
+                        }
+                        results.append(result)
+                        continue
                             
                     result = {
                         "id": object_data['id'],
