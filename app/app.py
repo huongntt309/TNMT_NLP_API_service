@@ -4,7 +4,7 @@ from waitress import serve
 import json
 import os
 from sp_func import setup, Classification, Summarization
-from validate_input import check_duplicate_ids
+from validate import check_duplicate_ids
 
 
 app = Flask(__name__)
